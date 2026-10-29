@@ -7,7 +7,9 @@ from pydantic_settings import BaseSettings, SettingsConfigDict
 
 
 class Settings(BaseSettings):
-    model_config = SettingsConfigDict(env_file=".env", env_file_encoding="utf-8", extra="ignore")
+    # env_ignore_empty : une variable laissée vide dans .env (ex. PIPEDRIVE_OWNER_ID=) vaut « non définie ».
+    model_config = SettingsConfigDict(env_file=".env", env_file_encoding="utf-8", extra="ignore",
+                                      env_ignore_empty=True)
 
     app_env: str = "dev"
     database_url: str = "postgresql+asyncpg://actes:actes@localhost:5432/actes"

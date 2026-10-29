@@ -3,6 +3,7 @@
 import asyncio
 import os
 
+from pydantic_settings import BaseSettings, SettingsConfigDict
 from sqlalchemy.ext.asyncio import create_async_engine
 
 from alembic import context
@@ -12,10 +13,18 @@ from app.db.base import Base
 target_metadata = Base.metadata
 
 
+class _ConfigBase(BaseSettings):
+    """Lit seulement DATABASE_URL, depuis l'environnement ou le fichier .env."""
+
+    model_config = SettingsConfigDict(env_file=".env", env_file_encoding="utf-8", extra="ignore",
+                                      env_ignore_empty=True)
+    database_url: str | None = None
+
+
 def _url() -> str:
-    url = os.environ.get("DATABASE_URL")
+    url = os.environ.get("DATABASE_URL") or _ConfigBase().database_url
     if not url:
-        raise RuntimeError("DATABASE_URL doit être défini pour exécuter les migrations")
+        raise RuntimeError("DATABASE_URL doit être défini (environnement ou fichier .env)")
     return url
 
 

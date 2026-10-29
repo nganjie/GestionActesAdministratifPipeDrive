@@ -1,0 +1,49 @@
+name: CI
+
+on:
+  push:
+    branches: [main, "claude/**"]
+  pull_request:
+
+jobs:
+  tests:
+    runs-on: ubuntu-latest
+    services:
+      postgres:
+        image: postgres:16
+        env:
+          POSTGRES_USER: actes
+          POSTGRES_PASSWORD: actes
+          POSTGRES_DB: actes_test
+        ports: ["5432:5432"]
+        options: >-
+          --health-cmd "pg_isready -U actes" --health-interval 5s --health-timeout 5s --health-retries 10
+    steps:
+      - uses: actions/checkout@v4
+      - uses: astral-sh/setup-uv@v5
+        with:
+          python-version: "3.12"
+      - name: Dépendances
+        run: uv sync --frozen
+      - name: Lint
+        run: uv run ruff check .
+      - name: Tests (SQLite)
+        run: uv run pytest -q
+      - name: Tests (PostgreSQL)
+        env:
+          TEST_DATABASE_URL: postgresql+asyncpg://actes:actes@localhost:5432/actes_test
+        run: uv run pytest -q
+      - name: Migrations
+        env:
+          DATABASE_URL: postgresql+asyncpg://actes:actes@localhost:5432/actes_test
+          JWT_SECRET: secret-ci-suffisamment-long-pour-hs256-0123456789
+        run: |
+          uv run python -c "import asyncio; from sqlalchemy.ext.asyncio import create_async_engine; from sqlalchemy import text
+          async def m():
+              e = create_async_engine('$DATABASE_URL')
+              async with e.begin() as c:
+                  await c.execute(text('DROP SCHEMA public CASCADE')); await c.execute(text('CREATE SCHEMA public'))
+              await e.dispose()
+          asyncio.run(m())"
+          uv run alembic upgrade head
+          uv run alembic check

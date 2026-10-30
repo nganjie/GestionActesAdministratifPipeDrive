@@ -20,10 +20,14 @@ h3 { margin: 0; font-size: 14px; font-weight: 600; }
 .sr-only { position: absolute; width: 1px; height: 1px; overflow: hidden; clip: rect(0 0 0 0); white-space: nowrap; }
 
 /* Mise en page */
-.coque { min-height: 100vh; display: flex; flex-wrap: wrap; align-items: stretch; }
-.menu { flex: 1 1 232px; max-width: 100%; background: var(--surface); border-right: 1px solid var(--bord);
-  padding: 20px 14px; display: flex; flex-direction: column; gap: 22px; }
-.contenu { flex: 999 1 560px; min-width: 0; padding: 28px 32px 48px; display: flex; flex-direction: column; gap: 20px; }
+/* Barre latérale fixe : elle reste en place quand la page défile ; elle défile seule si l'écran est trop bas. */
+.coque { min-height: 100vh; display: flex; align-items: flex-start; }
+.menu { flex: 0 0 248px; position: sticky; top: 0; height: 100vh; overflow-y: auto; overscroll-behavior: contain;
+  background: var(--surface); border-right: 1px solid var(--bord); padding: 20px 14px;
+  display: flex; flex-direction: column; gap: 22px; z-index: 20; }
+.menu-panneau { flex: 1; display: flex; flex-direction: column; gap: 22px; }
+.menu .menu-bouton { display: none; }
+.contenu { flex: 1 1 auto; min-width: 0; padding: 28px 32px 48px; display: flex; flex-direction: column; gap: 20px; }
 .contenu > * { max-width: 1240px; width: 100%; }
 .marque { display: flex; align-items: center; gap: 10px; padding: 0 8px; color: var(--encre); text-decoration: none; }
 .marque-logo { width: 34px; height: 34px; border-radius: 8px; background: var(--vert); display: flex;
@@ -167,6 +171,13 @@ input:focus-visible, select:focus-visible, textarea:focus-visible, .bouton:focus
 
 @media (max-width: 720px) {
   .contenu { padding: 20px 16px 40px; }
-  .menu { border-right: 0; border-bottom: 1px solid var(--bord); }
+  /* Petit écran : barre du haut collante, le menu se déplie sous la marque. */
+  .coque { flex-direction: column; align-items: stretch; }
+  .menu { flex: none; height: auto; max-height: 100vh; border-right: 0; border-bottom: 1px solid var(--bord);
+    padding: 10px 16px; flex-direction: row; flex-wrap: wrap; align-items: center; gap: 12px; }
+  .menu .marque { padding: 0; }
+  .js .menu .menu-bouton { display: inline-flex; margin-left: auto; }
+  .menu-panneau { flex: 1 0 100%; padding-bottom: 6px; }
+  .js .menu:not(.ouvert) .menu-panneau { display: none; }
   .connexion-pres { padding: 32px 24px; }
 }

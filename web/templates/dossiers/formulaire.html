@@ -64,7 +64,7 @@
     </section>
 
     {% if doublon %}
-    <section class="message message-attention" role="alert" style="flex-direction:column;gap:12px">
+    <section class="message message-attention message-pile" role="alert">
       <div><strong>Un dossier ouvert existe déjà pour cette demande</strong> :
         {% if doublon.dossier_id %}<a class="mono" href="{{ url_for('dossiers.detail', dossier_id=doublon.dossier_id) }}" style="color:inherit">{{ doublon.reference_existante }}</a>{% else %}<span class="mono">{{ doublon.reference_existante or '' }}</span>{% endif %}.
         La création est bloquée pour éviter un doublon (RM02).</div>

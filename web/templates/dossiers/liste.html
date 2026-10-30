@@ -9,6 +9,11 @@
   </div>
   {% if peut_creer %}<div class="actions"><a class="bouton bouton-principal" href="{{ url_for('dossiers.nouveau') }}">Nouveau dossier</a></div>{% endif %}
 </div>
+{% if not peut_creer %}
+<p class="message message-info" style="margin:0">La création d'un dossier est réservée au rôle <strong>Agent d'accueil</strong>
+  (guichet).{% if utilisateur.role == 'ADMIN' %} Créez un compte d'accueil dans
+  <a href="{{ url_for('admin.utilisateurs') }}">Comptes et rôles</a>, puis connectez-vous avec ce compte.{% endif %}</p>
+{% endif %}
 
 <form class="carte carte-corps barre-filtres" method="get" aria-label="Filtres">
   <div class="champ large"><label for="reference">Référence</label>
@@ -29,7 +34,7 @@
     </select></div>
   <div class="champ"><label for="cree_du">Créé du</label><input id="cree_du" name="cree_du" type="date" value="{{ filtres.cree_du }}"></div>
   <div class="champ"><label for="cree_au">au</label><input id="cree_au" name="cree_au" type="date" value="{{ filtres.cree_au }}"></div>
-  <div style="display:flex;gap:8px">
+  <div class="boutons">
     <button class="bouton bouton-principal" type="submit">Filtrer</button>
     <a class="bouton" href="{{ url_for('dossiers.liste') }}">Réinitialiser</a>
   </div>

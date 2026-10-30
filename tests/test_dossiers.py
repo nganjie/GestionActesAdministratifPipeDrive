@@ -290,3 +290,12 @@ async def test_noms_des_agents_exposes(client, agents):
     assert d["createur_nom"] == "Accueil"
     historique = (await client.get(f"{API}/{d['id']}/historique", headers=agents["accueil"])).json()
     assert historique[0]["auteur_nom"] == "Accueil"
+
+
+async def test_messages_de_validation_traduits(client, agents):
+    corps = dossier_deces()
+    del corps["objet"]
+    corps["donnees_specifiques"]["lieu_deces"] = ""
+    r = await client.post(API, headers=agents["accueil"], json=corps)
+    erreurs = {d["champ"]: d["erreur"] for d in r.json()["details"]}
+    assert erreurs["objet"] == "Champ obligatoire."

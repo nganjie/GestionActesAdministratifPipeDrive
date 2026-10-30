@@ -16,6 +16,7 @@ from app.core.errors import (
     RessourceIntrouvable,
     ValidationEchouee,
 )
+from app.core.messages import traduire
 from app.db.models import (
     Compteur,
     Decision,
@@ -59,7 +60,7 @@ STATUTS_DECLARATION_PIECES = frozenset({Statut.BROUILLON, Statut.SOUMIS, Statut.
 def _details_validation(exc: ValidationError, prefixe: str) -> list[dict[str, str]]:
     return [
         {"champ": ".".join([prefixe, *(str(p) for p in e["loc"])]).strip("."),
-         "erreur": e["msg"].removeprefix("Value error, ")}
+         "erreur": traduire(e)}
         for e in exc.errors()
     ]
 

@@ -64,6 +64,8 @@ def nouveau():  # noqa: ANN201
     valeurs: dict[str, str] = formulaire() if request.method == "POST" else {}
     erreurs: dict[str, str] = {}
     doublon = None
+    if valeurs.get("reference_doublon"):  # encadré de doublon déjà affiché : on le conserve en cas d'erreur
+        doublon = {"reference_existante": valeurs["reference_doublon"], "dossier_id": valeurs.get("dossier_doublon")}
     if request.method == "POST" and demarche:
         corps = {"type_demarche": type_, **_corps_dossier(type_, valeurs)}
         if valeurs.get("confirmer_doublon"):
@@ -80,8 +82,6 @@ def nouveau():  # noqa: ANN201
             else:
                 if exc.code == "MOTIF_OBLIGATOIRE":
                     erreurs["motif_doublon"] = exc.message
-                    doublon = {"reference_existante": valeurs.get("reference_doublon"),
-                               "dossier_id": valeurs.get("dossier_doublon")}
                 flasher_erreur(exc)
         else:
             flash(f"Dossier {dossier['reference']} créé en brouillon. Déclarez les pièces puis soumettez-le.",

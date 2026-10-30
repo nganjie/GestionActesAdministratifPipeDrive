@@ -112,13 +112,17 @@ input:focus-visible, select:focus-visible, textarea:focus-visible, .bouton:focus
 .bouton-danger-plein { background: var(--rouge); border-color: var(--rouge); color: #fff; font-weight: 600; }
 .bouton-petit { min-height: 34px; padding: 0 12px; font-size: 13px; }
 .en-ligne { display: inline; }
-.barre-filtres { display: flex; flex-wrap: wrap; gap: 12px; align-items: flex-end; }
-.barre-filtres .champ { flex: 1 1 170px; }
+/* Toujours en ligne (avec retour à la ligne), même combinée à .carte-corps qui est en colonne. */
+.barre-filtres { display: flex; flex-direction: row; flex-wrap: wrap; gap: 12px; align-items: flex-end;
+  justify-content: flex-start; }
+.barre-filtres .champ { flex: 1 1 170px; min-width: 0; }
 .barre-filtres .champ.large { flex: 2 1 240px; }
+.barre-filtres .boutons { display: flex; gap: 8px; flex: 0 0 auto; }
 
 /* Messages */
 .messages { display: flex; flex-direction: column; gap: 8px; }
-.message { display: flex; gap: 10px; align-items: flex-start; padding: 12px 14px; border-radius: 8px; line-height: 1.5; }
+.message { display: block; padding: 12px 14px; border-radius: 8px; line-height: 1.5; }
+.message-pile { display: flex; flex-direction: column; gap: 8px; }
 .message-succes { background: var(--vert-pale); color: var(--vert-fonce); }
 .message-erreur { background: var(--rouge-pale); color: #8C1D13; }
 .message-attention { background: var(--orange-pale); color: #5C2804; }

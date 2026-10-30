@@ -14,7 +14,7 @@
     <input id="operation" name="operation" value="{{ filtres.operation }}" placeholder="OP-12, AUTH_CONNEXION…"></div>
   <div class="champ large"><label for="correlation_id">Identifiant de corrélation</label>
     <input id="correlation_id" name="correlation_id" value="{{ filtres.correlation_id }}" class="mono"></div>
-  <div style="display:flex;gap:8px"><button class="bouton bouton-principal" type="submit">Filtrer</button>
+  <div class="boutons"><button class="bouton bouton-principal" type="submit">Filtrer</button>
     <a class="bouton" href="{{ url_for('admin.journaux') }}">Réinitialiser</a></div>
 </form>
 

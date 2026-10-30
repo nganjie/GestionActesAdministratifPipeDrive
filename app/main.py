@@ -21,6 +21,7 @@ from app.core.logging import (
     get_correlation_id,
     nouvel_identifiant_correlation,
 )
+from app.core.messages import traduire
 from app.db.base import dispose_engine, get_session_factory, init_engine
 from app.services import auth as auth_service
 from app.services import demarches
@@ -97,7 +98,7 @@ def create_app() -> FastAPI:
     async def _validation(_: Request, exc: RequestValidationError) -> JSONResponse:
         details = [
             {"champ": ".".join(str(p) for p in e["loc"] if p != "body"),
-             "erreur": str(e["msg"]).removeprefix("Value error, ")}
+             "erreur": traduire(e)}
             for e in exc.errors()
         ]
         return _reponse_erreur(400, "VALIDATION_ECHOUEE", "Certains champs sont invalides.", details)

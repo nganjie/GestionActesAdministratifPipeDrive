@@ -337,3 +337,22 @@ def test_resume_dates_au_format_francais():
 
     lignes = dict(lignes_resume("DECES", {"date_deces": "2026-10-24", "lieu_deces": "Yaoundé"}))
     assert lignes["Date du décès"] == "24/10/2026"
+
+
+def test_justification_de_doublon_trop_courte(app):
+    client = connecter(app, "accueil")
+    creer_dossier(client, "Courte")
+    r = poster(client, "/dossiers/nouveau?type=DECES", deces("Courte"))
+    reference = re.search(r'name="reference_doublon" value="([^"]+)"', texte(r)).group(1)
+    r = poster(client, "/dossiers/nouveau?type=DECES",
+               deces("Courte", confirmer_doublon="1", motif_doublon="erreur", reference_doublon=reference))
+    page = texte(r)
+    assert "Un dossier ouvert existe déjà" in page
+    assert 'id="motif_doublon-err"' in page and "Au moins 10 caractères." in page
+
+
+def test_messages_de_validation_en_francais(app):
+    admin = connecter(app, *ADMIN)
+    r = poster(admin, "/admin/utilisateurs", {"nom": "X Y", "identifiant": "court.mdp", "mot_de_passe": "court",
+                                               "role": "ACCUEIL", "categorie": ""})
+    assert "Au moins 12 caractères." in texte(r)

@@ -12,6 +12,17 @@
   {% endif %}
 </div>
 
+{% if utilisateur.role == 'ADMIN' and total == 0 %}
+<section class="message message-info message-pile">
+  <strong>Premiers pas</strong>
+  <span>1. Dans <a href="{{ url_for('admin.utilisateurs') }}">Comptes et rôles</a>, créez au moins un agent d'accueil,
+    un agent d'état civil (ou de certification) et un responsable.</span>
+  <span>2. Déconnectez-vous et reconnectez-vous avec le compte d'accueil : c'est lui qui crée les dossiers
+    (menu « Nouveau dossier »).</span>
+  <span>Le scénario complet est décrit dans <span class="mono">docs/SCENARIO_DE_TEST.md</span>.</span>
+</section>
+{% endif %}
+
 <section class="grille-kpi" aria-label="Indicateurs">
   {% for r in repartition if r.code in ('BROUILLON','SOUMIS','INCOMPLET','EN_INSTRUCTION','EN_ATTENTE_DECISION','APPROUVE') %}
   <a class="carte kpi" href="{{ url_for('dossiers.liste', statut=r.code) }}">

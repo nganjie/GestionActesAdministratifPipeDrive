@@ -1,4 +1,4 @@
-"""Adaptateur Pipedrive : une méthode par opération de l'ISD (OP-01 à OP-16)."""
+"""Adaptateur Pipedrive : une méthode par opération de l'ISD (OP-01 à OP-16), plus OP-17 à OP-19 en mode démo."""
 
 from typing import Any
 
@@ -98,6 +98,19 @@ class PipedriveAdapter:
                                           params={"term": reference, "fields": "title"})
         ids = sorted(i["id"] for i in _items_recherche(corps) if str(i.get("title", "")).startswith(reference))
         return ids[0] if ids else None
+
+    # OP-17 (mode démo) : deals du pipeline, y compris gagnés et perdus
+    async def lister_deals_pipeline(self, pipeline_id: int) -> list[dict[str, Any]]:
+        return await self._paginer("OP-17", "/api/v2/deals", params={"pipeline_id": pipeline_id})
+
+    # OP-18 (mode démo)
+    async def supprimer_deal(self, deal_id: int) -> None:
+        await self.client.requete("OP-18", "DELETE", "/api/v2/deals/{id}", chemin=f"/api/v2/deals/{deal_id}")
+
+    # OP-19 (mode démo)
+    async def supprimer_activite(self, activite_id: int) -> None:
+        await self.client.requete("OP-19", "DELETE", "/api/v2/activities/{id}",
+                                  chemin=f"/api/v2/activities/{activite_id}")
 
     # OP-11
     async def maj_deal(self, deal_id: int, charge: dict[str, Any]) -> None:

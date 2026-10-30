@@ -1,0 +1,45 @@
+{% extends "base.html" %}
+{% from "macros.html" import csrf with context %}
+{% block titre %}Réinitialiser la démo{% endblock %}
+{% block contenu %}
+<div class="entete"><div><h1>Réinitialiser la démonstration</h1>
+  <p class="discret" style="margin:4px 0 0">Repartir d'un jeu de données propre, dans l'application et dans Pipedrive.</p></div></div>
+
+{% if not etat.actif %}
+<p class="message message-info" style="margin:0;max-width:640px">Le mode démonstration est désactivé sur ce serveur.
+  Pour l'activer, ajoutez <code>MODE_DEMO=true</code> dans le fichier <code>.env</code> de l'API puis redémarrez-la.
+  Ne l'activez jamais en production.</p>
+{% else %}
+<form method="post" class="carte" style="max-width:640px" novalidate>
+  {{ csrf() }}
+  <div class="carte-corps">
+    <h2 style="font-size:17px;margin:0">Ce qui va se passer</h2>
+    <ul style="margin:0;padding-left:20px;display:flex;flex-direction:column;gap:6px">
+      <li>Tous les dossiers de ce serveur sont effacés : demandeurs, pièces, décisions, historique, synchronisations.</li>
+      {% if etat.pipedrive %}
+      <li>Dans Pipedrive, les deals dont le titre commence par <span class="mono">ACT-</span> du pipeline
+        « {{ etat.pipeline }} » et leurs activités sont supprimés. Rien d'autre n'est touché ; les contacts sont
+        conservés et réutilisés.</li>
+      {% else %}
+      <li>Pipedrive n'est pas configuré sur ce serveur : seule la base locale est réinitialisée.</li>
+      {% endif %}
+      <li>Les 10 dossiers de démonstration sont rechargés{% if etat.pipedrive %}, puis envoyés à Pipedrive par le worker{% endif %}.</li>
+      <li>Les comptes, la configuration des démarches et les journaux techniques sont conservés.</li>
+    </ul>
+    {% if etat.pipedrive %}
+    <p class="message message-attention" style="margin:0">Si un autre serveur est relié au même compte Pipedrive,
+      arrêtez son worker ou videz son <span class="mono">PIPEDRIVE_API_TOKEN</span> : sinon il recréera ses propres
+      deals.</p>
+    {% endif %}
+    {% if erreur %}<p class="message message-erreur" role="alert" style="margin:0">{{ erreur }}</p>{% endif %}
+    <div class="champ">
+      <label for="confirmation" class="obligatoire">Pour confirmer, saisissez REINITIALISER</label>
+      <input id="confirmation" name="confirmation" autocomplete="off" required class="mono" maxlength="40">
+    </div>
+    <div style="display:flex;justify-content:flex-end">
+      <button class="bouton bouton-danger-plein" type="submit">Réinitialiser la démo</button>
+    </div>
+  </div>
+</form>
+{% endif %}
+{% endblock %}

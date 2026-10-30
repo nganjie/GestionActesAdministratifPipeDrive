@@ -56,6 +56,9 @@ class FakePipedrive:
             ("GET", r"/api/v2/deals/search$", "deals.search", self._deals_search),
             ("POST", r"/api/v2/deals$", "deals.create", self._deals_create),
             ("PATCH", r"/api/v2/deals/(?P<id>\d+)$", "deals.update", self._deals_update),
+            ("GET", r"/api/v2/deals$", "deals.list", self._deals_list),
+            ("DELETE", r"/api/v2/deals/(?P<id>\d+)$", "deals.delete", self._deals_delete),
+            ("DELETE", r"/api/v2/activities/(?P<id>\d+)$", "activities.delete", self._activities_delete),
             ("GET", r"/api/v2/activities$", "activities.list", self._activities_list),
             ("POST", r"/api/v2/activities$", "activities.create", self._activities_create),
             ("GET", r"/api/v2/activities/(?P<id>\d+)$", "activities.get", self._activities_get),
@@ -162,6 +165,20 @@ class FakePipedrive:
             return httpx.Response(404, json={"success": False, "error": "not found"})
         self.deals[int(id)].update(corps)
         return self._ok(self.deals[int(id)])
+
+    def _deals_list(self, request, corps):  # noqa: ANN001, ANN202
+        pipeline_id = int(request.url.params["pipeline_id"])
+        return self._paginer(request, [d for d in self.deals.values() if d.get("pipeline_id") == pipeline_id])
+
+    def _deals_delete(self, request, corps, id):  # noqa: ANN001, ANN202, A002
+        if self.deals.pop(int(id), None) is None:
+            return httpx.Response(404, json={"success": False, "error": "not found"})
+        return self._ok({"id": int(id)})
+
+    def _activities_delete(self, request, corps, id):  # noqa: ANN001, ANN202, A002
+        if self.activities.pop(int(id), None) is None:
+            return httpx.Response(404, json={"success": False, "error": "not found"})
+        return self._ok({"id": int(id)})
 
     def _activities_list(self, request, corps):  # noqa: ANN001, ANN202
         deal_id = int(request.url.params["deal_id"])

@@ -1,4 +1,4 @@
-"""Administration : comptes (UC02), démarches (UC16), synchronisations (UC15), journaux et santé (UC17)."""
+"""Administration : comptes (UC02), démarches (UC16), synchronisations (UC15), journaux et santé (UC17), démo."""
 
 from flask import Blueprint, flash, redirect, render_template, request, url_for
 
@@ -163,3 +163,27 @@ def journaux():  # noqa: ANN201
     resultat = api().get("/admin/journaux", page=page, taille=50, **filtres)
     pages = max(1, -(-resultat["total"] // resultat["taille"]))
     return render_template("admin/journaux.html", resultat=resultat, filtres=filtres, page=page, pages=pages)
+
+
+# --- Réinitialisation de la démonstration ----------------------------------------------------------------
+
+@bp.route("/demo", methods=["GET", "POST"])
+@roles_requis("ADMIN")
+def demo():  # noqa: ANN201
+    client = api()
+    erreur = None
+    if request.method == "POST":
+        try:
+            # Suppression des deals un par un puis rechargement des données : plus long qu'un appel ordinaire.
+            bilan = client.post("/admin/demo/reinitialiser", {"confirmation": formulaire().get("confirmation", "")},
+                                timeout=180)
+        except ApiErreur as exc:
+            erreur = exc.message
+        else:
+            message = f"Démonstration réinitialisée : {bilan['dossiers_crees']} dossier(s) de démonstration rechargés"
+            if bilan["pipedrive"]:
+                message += (f" ; {bilan['deals_supprimes']} deal(s) et {bilan['activites_supprimees']} activité(s) "
+                            "supprimés dans Pipedrive. Les nouveaux dossiers y seront envoyés par le worker")
+            flash(message + ".", "succes")
+            return redirect(url_for("admin.demo"))
+    return render_template("admin/demo.html", etat=client.get("/admin/demo"), erreur=erreur)

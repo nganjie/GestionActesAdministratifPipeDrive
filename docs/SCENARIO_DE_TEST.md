@@ -83,6 +83,21 @@ dossiers). Chaque dossier a un historique complet, comme si les agents avaient t
 Avec ces données, chaque rôle voit immédiatement des dossiers dans **Ma file de travail** du tableau de bord.
 Pour rejouer un parcours de bout en bout, enchaînez avec le scénario A ci-dessous.
 
+### Repartir de zéro avant une présentation
+
+Avec `MODE_DEMO=true` dans le `.env` de l'API (puis redémarrage de l'API), connectez-vous en `admin` et ouvrez
+**Administration → Réinitialiser la démo**. Saisissez `REINITIALISER` et validez :
+
+- tous les dossiers du serveur sont effacés, puis les 10 dossiers ci-dessus sont rechargés (références à partir
+  de `ACT-2026-000001`) ;
+- si Pipedrive est configuré, les deals « ACT-… » du pipeline « Actes administratifs » et leurs activités sont
+  supprimés ; le worker renvoie ensuite les nouveaux dossiers (contacts réutilisés, pas de doublon) ;
+- les comptes et leurs mots de passe, les démarches et les journaux sont conservés.
+
+**Démo sur une autre machine avec le même compte Pipedrive** (ex. seed lancé sur le desktop, présentation sur le
+laptop) : sur le laptop, lancez le seed puis cliquez sur « Réinitialiser la démo » ; sur le desktop, videz
+`PIPEDRIVE_API_TOKEN` ou n'y lancez plus le worker, sinon il recréera ses anciens deals.
+
 ### Variante manuelle — créer les comptes soi-même (administrateur)
 
 Si vous n'utilisez pas le script :
@@ -311,6 +326,7 @@ l'avancement du dossier le sont.
 | Délivrer | accueil, instructeur ou chef | Fiche du dossier → Enregistrer la délivrance |
 | Annuler | accueil ou chef | Fiche du dossier → Annuler le dossier |
 | Suivre Pipedrive | admin | Administration → Synchronisation Pipedrive |
+| Repartir de zéro (mode démo) | admin | Administration → Réinitialiser la démo |
 
 ---
 
@@ -324,3 +340,4 @@ l'avancement du dossier le sont.
 | Page « Service indisponible … API injoignable » | L'API (terminal 1) n'est pas démarrée ou `WEB_API_URL` est incorrect. |
 | Onglet Pipedrive « En échec PIPEDRIVE_NON_CONFIGURE » | `PIPEDRIVE_API_TOKEN` est vide dans `.env` : normal sans compte Pipedrive. |
 | Onglet Pipedrive reste « En attente » | Le worker (terminal 2) n'est pas démarré. |
+| Pas de menu « Réinitialiser la démo » | `MODE_DEMO=true` absent du `.env` de l'API, ou API non redémarrée : déconnectez-vous puis reconnectez-vous. |

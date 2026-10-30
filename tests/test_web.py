@@ -30,7 +30,8 @@ def _port_libre() -> int:
 def api_url(tmp_path_factory):  # noqa: ANN001, ANN201
     dossier = tmp_path_factory.mktemp("api")
     env = {**os.environ, "DATABASE_URL": f"sqlite+aiosqlite:///{dossier}/web.db", "PIPEDRIVE_API_TOKEN": "",
-           "SYNC_WORKER_EMBARQUE": "false", "ADMIN_IDENTIFIANT": ADMIN[0], "ADMIN_MOT_DE_PASSE": ADMIN[1]}
+           "SYNC_WORKER_EMBARQUE": "false", "ADMIN_IDENTIFIANT": ADMIN[0], "ADMIN_MOT_DE_PASSE": ADMIN[1],
+           "MODE_DEMO": "true"}
     subprocess.run([sys.executable, "-m", "alembic", "upgrade", "head"], cwd=RACINE, env=env, check=True,
                    capture_output=True)
     port = _port_libre()
@@ -356,3 +357,15 @@ def test_messages_de_validation_en_francais(app):
     r = poster(admin, "/admin/utilisateurs", {"nom": "X Y", "identifiant": "court.mdp", "mot_de_passe": "court",
                                                "role": "ACCUEIL", "categorie": ""})
     assert "Au moins 12 caractères." in texte(r)
+
+
+def test_page_reinitialisation_demo(app):  # noqa: ANN001
+    admin = connecter(app, *ADMIN)
+    assert "Réinitialiser la démo" in texte(admin.get("/"))
+    page = texte(admin.get("/admin/demo"))
+    assert "Pipedrive n'est pas configuré" in page and 'name="confirmation"' in page
+    # Une confirmation erronée n'efface rien (la réinitialisation elle-même est couverte par tests/test_demo.py).
+    r = poster(admin, "/admin/demo", {"confirmation": "oui"})
+    assert r.status_code == 200 and "Saisissez exactement" in texte(r)
+    assert "Réinitialiser la démo" not in texte(connecter(app, "chef").get("/"))
+    assert connecter(app, "chef").get("/admin/demo").status_code == 302

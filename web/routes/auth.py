@@ -29,6 +29,8 @@ def connexion():  # noqa: ANN201
             client = api()
             jetons = client.connecter(identifiant, request.form.get("mot_de_passe", ""))
             profil = client.get("/auth/me")
+            if profil["role"] == "ADMIN":
+                profil["mode_demo"] = client.get("/admin/demo")["actif"]
         except ApiErreur as exc:
             erreur = exc.message
         else:

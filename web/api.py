@@ -45,7 +45,7 @@ class ClientApi:
     # --- Bas niveau ---------------------------------------------------------------------------------
 
     def _envoyer(self, methode: str, chemin: str, *, json: Any = None, params: dict | None = None,
-                 authentifie: bool = True) -> httpx.Response:
+                 authentifie: bool = True, timeout: float | None = None) -> httpx.Response:
         entetes = {"Accept": "application/json"}
         if self.correlation_id:
             entetes["X-Correlation-Id"] = self.correlation_id
@@ -53,7 +53,8 @@ class ClientApi:
             entetes["Authorization"] = f"Bearer {self.jetons['access_token']}"
         propres = {k: v for k, v in (params or {}).items() if v not in (None, "")}
         try:
-            return self._http.request(methode, chemin, json=json, params=propres, headers=entetes)
+            return self._http.request(methode, chemin, json=json, params=propres, headers=entetes,
+                                      timeout=timeout if timeout is not None else httpx.USE_CLIENT_DEFAULT)
         except httpx.TimeoutException as exc:
             raise ApiErreur(504, "API_DELAI_DEPASSE", "L'API n'a pas répondu à temps.") from exc
         except httpx.TransportError as exc:
@@ -85,12 +86,12 @@ class ClientApi:
         return True
 
     def requete(self, methode: str, chemin: str, *, json: Any = None, params: dict | None = None,
-                authentifie: bool = True) -> Any:
-        r = self._envoyer(methode, chemin, json=json, params=params, authentifie=authentifie)
+                authentifie: bool = True, timeout: float | None = None) -> Any:
+        r = self._envoyer(methode, chemin, json=json, params=params, authentifie=authentifie, timeout=timeout)
         if r.status_code == 401 and authentifie:
             if not self._renouveler():
                 raise SessionExpiree()
-            r = self._envoyer(methode, chemin, json=json, params=params, authentifie=True)
+            r = self._envoyer(methode, chemin, json=json, params=params, authentifie=True, timeout=timeout)
             if r.status_code == 401:
                 raise SessionExpiree()
         if r.status_code >= 400:
@@ -102,8 +103,8 @@ class ClientApi:
     def get(self, chemin: str, **params: Any) -> Any:
         return self.requete("GET", chemin, params=params)
 
-    def post(self, chemin: str, json: Any = None) -> Any:
-        return self.requete("POST", chemin, json=json if json is not None else {})
+    def post(self, chemin: str, json: Any = None, timeout: float | None = None) -> Any:
+        return self.requete("POST", chemin, json=json if json is not None else {}, timeout=timeout)
 
     def patch(self, chemin: str, json: Any) -> Any:
         return self.requete("PATCH", chemin, json=json)

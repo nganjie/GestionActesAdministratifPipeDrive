@@ -108,6 +108,14 @@ uv run python -m app.scripts.seed_demo
 La liste des comptes, des mots de passe et des dossiers créés est affichée à la fin ; le scénario de test pas à pas
 est dans [docs/SCENARIO_DE_TEST.md](docs/SCENARIO_DE_TEST.md).
 
+Pour repartir d'un état propre (avant une présentation, ou pour passer la démo d'une machine à une autre avec le
+même compte Pipedrive), mettre `MODE_DEMO=true` dans `.env` : l'administrateur dispose alors de
+**Administration → Réinitialiser la démo**. L'opération efface les dossiers locaux, supprime dans Pipedrive les
+deals « ACT-… » du pipeline configuré et leurs activités (OP-17 à OP-19), puis recharge les données de
+démonstration. Comptes, démarches, contacts Pipedrive et journaux sont conservés. Si un autre serveur est relié au
+même compte Pipedrive, arrêtez son worker ou videz son `PIPEDRIVE_API_TOKEN`, sinon il recréera ses propres deals.
+Ne jamais activer `MODE_DEMO` en production.
+
 ### Initialiser Pipedrive
 
 Vérifie le jeton, les types d'activités (`task`, `call`, `deadline`) et crée le pipeline « Actes administratifs »
@@ -160,6 +168,7 @@ et `/sante`.
 | `GET /synchronisations`, `POST /synchronisations/{id}/relance`, `POST /synchronisations/relance-globale` | UC15 |
 | `GET /demarches`, `PATCH /admin/demarches/{code}`, `POST/PATCH /admin/demarches/{code}/pieces` | UC16 |
 | `GET /admin/journaux`, `GET /admin/sante/pipedrive`, `GET /sante` | UC17 |
+| `GET /admin/demo`, `POST /admin/demo/reinitialiser` | Réinitialisation de la démo (`MODE_DEMO=true`) |
 
 Format d'erreur unique (FRS §7.2) :
 
@@ -183,6 +192,8 @@ Format d'erreur unique (FRS §7.2) :
   par les tests de contrat sur un compte sandbox (ISD point P9).
 - Le choix de Python/FastAPI à la place de Spring Boot (CDC §7.3) doit être validé par l'encadrant (P8).
 - Les pièces requises par démarche sont des hypothèses de travail, modifiables par l'administrateur (P2).
+- Les opérations OP-17 à OP-19 (lister et supprimer deals et activités) ne servent qu'au mode démo ; elles ne
+  figurent pas encore dans l'ISD.
 
 ## Application web des agents
 

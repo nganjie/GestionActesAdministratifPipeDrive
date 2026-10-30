@@ -325,3 +325,21 @@ class SantePipedriveSortie(BaseModel):
     types_activite_manquants: list[str] = []
     synchronisations: dict[str, int]
     erreur: str | None = None
+
+
+class DemoEtatSortie(BaseModel):
+    actif: bool
+    pipedrive: bool
+    pipeline: str
+
+
+class DemoReinitialisation(Entree):
+    confirmation: str = Field(max_length=40)
+
+
+class DemoBilanSortie(BaseModel):
+    dossiers_supprimes: int
+    deals_supprimes: int
+    activites_supprimees: int
+    dossiers_crees: int
+    pipedrive: bool

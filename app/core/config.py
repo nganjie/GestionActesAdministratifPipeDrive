@@ -43,6 +43,9 @@ class Settings(BaseSettings):
     sync_poll_interval: float = 5.0
     sync_worker_embarque: bool = False
 
+    # Mode démonstration : autorise la réinitialisation complète (base + deals Pipedrive). Jamais en production.
+    mode_demo: bool = False
+
     @field_validator("jwt_secret")
     @classmethod
     def _secret_assez_long(cls, v: SecretStr) -> SecretStr:

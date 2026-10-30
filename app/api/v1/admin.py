@@ -1,5 +1,6 @@
-"""Démarches (UC16), synchronisations (UC15), journaux et santé (UC17)."""
+"""Démarches (UC16), synchronisations (UC15), journaux et santé (UC17), réinitialisation de la démo."""
 
+import dataclasses
 import uuid
 from datetime import datetime
 
@@ -8,11 +9,16 @@ from sqlalchemy import text
 
 from app.api.deps import Admin, Courant, Lecture, Session
 from app.core.config import get_settings
+from app.core.errors import PipedriveDelaiDepasse, PipedriveErreurApi, PipedriveIndisponible
+from app.db.base import get_session_factory
 from app.domain.enums import EtatSynchro
-from app.integrations.pipedrive.errors import PipedriveErreur
+from app.integrations.pipedrive.errors import ErreurIndeterminee, ErreurRelancable, PipedriveErreur
 from app.schemas.api import (
     DemarcheModification,
     DemarcheSortie,
+    DemoBilanSortie,
+    DemoEtatSortie,
+    DemoReinitialisation,
     JournalSortie,
     Page,
     PieceRequiseCreation,
@@ -20,7 +26,7 @@ from app.schemas.api import (
     ReferenceSynchroSortie,
     SantePipedriveSortie,
 )
-from app.services import demarches, journal
+from app.services import demarches, demo, journal
 from app.services import synchronisation as sync
 from app.services.pipedrive_init import lire_parametres, types_activite_manquants
 
@@ -119,6 +125,44 @@ async def sante_pipedrive(_: Admin, session: Session, lecture: Lecture) -> Sante
         journal.ecrire_appels(session, lecture.appels)
         await session.commit()
     return resultat
+
+
+# --- Démonstration ------------------------------------------------------------------------------------------
+
+@router.get("/admin/demo", response_model=DemoEtatSortie, tags=["Administration"],
+            summary="Mode démonstration actif ?")
+async def etat_demo(_: Admin) -> DemoEtatSortie:
+    settings = get_settings()
+    return DemoEtatSortie(actif=settings.mode_demo, pipedrive=settings.pipedrive_configure,
+                          pipeline=settings.pipedrive_pipeline_name)
+
+
+@router.post("/admin/demo/reinitialiser", response_model=DemoBilanSortie, tags=["Administration"],
+             summary="Réinitialiser la démonstration (MODE_DEMO=true uniquement)")
+async def reinitialiser_demo(donnees: DemoReinitialisation, _: Admin, session: Session,
+                             lecture: Lecture) -> DemoBilanSortie:
+    settings = get_settings()
+    demo.verifier_autorisation(settings, donnees.confirmation)
+    try:
+        bilan = await demo.reinitialiser(get_session_factory(), settings, lecture.adapter)
+    except PipedriveErreur as exc:
+        journal.ecrire(session, "DEMO_REINITIALISATION", "ECHEC", niveau="ERROR", code_erreur=exc.code)
+        message = (f"Réinitialisation interrompue par Pipedrive ({exc.code}). "
+                   "Relancez-la : elle peut être rejouée sans risque.")
+        if isinstance(exc, ErreurIndeterminee):
+            raise PipedriveDelaiDepasse(message) from exc
+        if isinstance(exc, ErreurRelancable):
+            raise PipedriveIndisponible(message) from exc
+        raise PipedriveErreurApi(message, code=f"PIPEDRIVE_{exc.code}") from exc
+    else:
+        journal.ecrire(session, "DEMO_REINITIALISATION", "SUCCES",
+                       detail=f"{bilan.dossiers_supprimes} dossier(s), {bilan.deals_supprimes} deal(s) et "
+                              f"{bilan.activites_supprimees} activité(s) supprimés ; "
+                              f"{bilan.dossiers_crees} dossier(s) recréés")
+    finally:
+        journal.ecrire_appels(session, lecture.appels)
+        await session.commit()
+    return DemoBilanSortie(**dataclasses.asdict(bilan))
 
 
 @router.get("/sante", tags=["Administration"], summary="Santé de l'API (public)")

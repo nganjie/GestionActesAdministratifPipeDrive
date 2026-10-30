@@ -1,0 +1,105 @@
+{% extends "base.html" %}
+{% from "macros.html" import champ, csrf with context %}
+{% block titre %}{% if mode == 'creation' %}Nouveau dossier{% else %}Modifier {{ dossier.reference }}{% endif %}{% endblock %}
+{% block contenu %}
+<div>
+  <nav class="fil" aria-label="Fil d'Ariane"><a href="{{ url_for('dossiers.liste') }}">Dossiers</a><span aria-hidden="true">/</span>
+    {% if mode == 'creation' %}<span>Nouveau</span>{% else %}<a class="mono" href="{{ url_for('dossiers.detail', dossier_id=dossier.id) }}">{{ dossier.reference }}</a><span aria-hidden="true">/</span><span>Modifier</span>{% endif %}</nav>
+  <h1 style="margin-top:6px">{% if mode == 'creation' %}Nouveau dossier{% else %}Modifier le brouillon {{ dossier.reference }}{% endif %}</h1>
+  <p class="discret" style="margin:4px 0 0">{% if mode == 'creation' %}Le dossier est créé en brouillon : vous déclarerez ensuite les pièces puis le soumettrez.{% else %}Seul un dossier en brouillon peut être modifié. Le type de démarche ne change pas.{% endif %}</p>
+</div>
+
+{% if mode == 'creation' %}
+<section class="carte" aria-labelledby="s1">
+  <div class="carte-corps">
+    <h2 id="s1">1. Démarche</h2>
+    <div style="display:grid;grid-template-columns:repeat(auto-fill,minmax(190px,1fr));gap:10px">
+      {% for d in demarches %}
+      <a href="{{ url_for('dossiers.nouveau', type=d.code) }}" class="carte" style="padding:14px;text-decoration:none;color:inherit;{% if d.code == type_ %}border:2px solid var(--vert);background:#F1F8F5{% endif %}"
+         {% if d.code == type_ %}aria-current="true"{% endif %}>
+        <span class="petit discret" style="text-transform:uppercase;letter-spacing:.05em;font-weight:600">{{ d.categorie|categorie }}</span>
+        <strong style="display:block;margin-top:4px">{{ d.libelle }}</strong>
+      </a>
+      {% endfor %}
+      <div class="carte" aria-disabled="true" style="padding:14px;border-style:dashed;color:var(--discret)">
+        <span class="petit" style="text-transform:uppercase;letter-spacing:.05em;font-weight:600">État civil</span>
+        <strong style="display:block;margin-top:4px">Acte de naissance</strong>
+        <span class="petit">Hors périmètre de la version 1</span>
+      </div>
+    </div>
+  </div>
+</section>
+{% endif %}
+
+{% if demarche and formulaire %}
+<form method="post" class="colonnes" novalidate>
+  {{ csrf() }}
+  <input type="hidden" name="type" value="{{ type_ }}">
+  <div class="principale" style="display:flex;flex-direction:column;gap:20px">
+    <section class="carte" aria-labelledby="s2">
+      <div class="carte-corps">
+        <h2 id="s2">{% if mode == 'creation' %}2. {% endif %}Demandeur</h2>
+        <div class="champs-grille">
+          {{ champ('demandeur.nom', 'Nom', valeurs, erreurs, requis=True) }}
+          {{ champ('demandeur.prenom', 'Prénom', valeurs, erreurs, requis=True) }}
+          {{ champ('demandeur.telephone', 'Téléphone', valeurs, erreurs, type='tel', aide='+237 suivi de 9 chiffres') }}
+          {{ champ('demandeur.email', 'E-mail', valeurs, erreurs, type='email') }}
+          {{ champ('demandeur.date_naissance', 'Date de naissance', valeurs, erreurs, type='date') }}
+        </div>
+        {% if erreurs.get('demandeur') %}<p class="erreur-champ" style="margin:0">{{ erreurs['demandeur'] }}</p>{% endif %}
+        <p class="petit discret" style="margin:0">Le téléphone ou l'e-mail est obligatoire. Un demandeur déjà connu est réutilisé automatiquement.</p>
+      </div>
+    </section>
+
+    <section class="carte" aria-labelledby="s3">
+      <div class="carte-corps">
+        <h2 id="s3">{% if mode == 'creation' %}3. {% endif %}{{ formulaire.titre }}</h2>
+        <div class="champs-grille">
+          {{ champ('objet', 'Objet de la demande', valeurs, erreurs, requis=True) }}
+          {% for c in formulaire.champs %}
+            {{ champ(prefixe ~ c.nom, c.libelle, valeurs, erreurs, type=c.type, requis=c.requis, aide=c.aide, options=c.options) }}
+          {% endfor %}
+        </div>
+      </div>
+    </section>
+
+    {% if doublon %}
+    <section class="message message-attention" role="alert" style="flex-direction:column;gap:12px">
+      <div><strong>Un dossier ouvert existe déjà pour cette demande</strong> :
+        {% if doublon.dossier_id %}<a class="mono" href="{{ url_for('dossiers.detail', dossier_id=doublon.dossier_id) }}" style="color:inherit">{{ doublon.reference_existante }}</a>{% else %}<span class="mono">{{ doublon.reference_existante or '' }}</span>{% endif %}.
+        La création est bloquée pour éviter un doublon (RM02).</div>
+      <input type="hidden" name="reference_doublon" value="{{ doublon.reference_existante or '' }}">
+      <input type="hidden" name="dossier_doublon" value="{{ doublon.dossier_id or '' }}">
+      <label style="display:flex;gap:8px;align-items:center;font-weight:500">
+        <input type="checkbox" name="confirmer_doublon" value="1" style="width:18px;min-height:18px" {% if valeurs.get('confirmer_doublon') %}checked{% endif %}>
+        Créer quand même ce dossier (justification obligatoire)
+      </label>
+      {{ champ('motif_doublon', 'Justification', valeurs, erreurs, type='textarea', aide='10 à 500 caractères') }}
+    </section>
+    {% endif %}
+
+    <div style="display:flex;flex-wrap:wrap;gap:10px;justify-content:flex-end">
+      <a class="bouton" href="{{ url_for('dossiers.detail', dossier_id=dossier.id) if mode == 'modification' else url_for('dossiers.liste') }}">Annuler</a>
+      <button class="bouton bouton-principal" type="submit">{% if mode == 'creation' %}Créer le brouillon{% else %}Enregistrer les modifications{% endif %}</button>
+    </div>
+  </div>
+
+  <aside class="laterale">
+    <section class="carte" aria-labelledby="pieces-titre">
+      <div class="carte-corps">
+        <h2 id="pieces-titre">Pièces à présenter</h2>
+        <p class="petit discret" style="margin:0">{{ demarche.libelle }} · liste paramétrée par l'administrateur</p>
+        <ul style="margin:0;padding-left:18px;display:flex;flex-direction:column;gap:6px">
+          {% for p in (demarche.pieces or []) if p.actif %}<li>{{ p.libelle }}{% if not p.obligatoire %} <span class="discret">(facultative)</span>{% endif %}</li>{% endfor %}
+          {% if mode == 'modification' %}{% for p in dossier.pieces_requises %}<li>{{ p.libelle }}</li>{% endfor %}{% endif %}
+        </ul>
+      </div>
+    </section>
+    <section class="carte"><div class="carte-corps">
+      <h2>Ce qui part vers Pipedrive</h2>
+      <p style="margin:0">Nom, téléphone et e-mail du demandeur uniquement. Les autres données et les pièces restent à la mairie.</p>
+    </div></section>
+  </aside>
+</form>
+{% endif %}
+{% endblock %}

@@ -33,5 +33,18 @@ services:
       api:
         condition: service_started
 
+  web:
+    build: .
+    env_file: .env
+    environment:
+      WEB_API_URL: http://api:8000/api/v1
+      WEB_SESSIONS_DIR: /tmp/sessions
+    command: ["flask", "--app", "web.app", "run", "--host", "0.0.0.0", "--port", "5000"]
+    ports:
+      - "5000:5000"
+    depends_on:
+      api:
+        condition: service_started
+
 volumes:
   pgdata:

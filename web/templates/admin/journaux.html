@@ -1,0 +1,45 @@
+{% extends "base.html" %}
+{% from "macros.html" import pagination with context %}
+{% block titre %}Journaux techniques{% endblock %}
+{% block contenu %}
+<div class="entete"><div><h1>Journaux techniques</h1>
+  <p class="discret" style="margin:4px 0 0">Sans jeton, sans corps de requête, sans donnée personnelle (RG08).</p></div></div>
+
+<form class="carte carte-corps barre-filtres" method="get" aria-label="Filtres">
+  <div class="champ"><label for="niveau">Niveau</label>
+    <select id="niveau" name="niveau"><option value="">Tous</option>
+      {% for n in ('INFO', 'WARNING', 'ERROR') %}<option {% if filtres.niveau == n %}selected{% endif %}>{{ n }}</option>{% endfor %}
+    </select></div>
+  <div class="champ"><label for="operation">Opération</label>
+    <input id="operation" name="operation" value="{{ filtres.operation }}" placeholder="OP-12, AUTH_CONNEXION…"></div>
+  <div class="champ large"><label for="correlation_id">Identifiant de corrélation</label>
+    <input id="correlation_id" name="correlation_id" value="{{ filtres.correlation_id }}" class="mono"></div>
+  <div style="display:flex;gap:8px"><button class="bouton bouton-principal" type="submit">Filtrer</button>
+    <a class="bouton" href="{{ url_for('admin.journaux') }}">Réinitialiser</a></div>
+</form>
+
+<section class="carte" aria-label="Entrées du journal">
+  {% if resultat.elements %}
+  <div class="defilement">
+    <table class="mono" style="font-size:12.5px">
+      <thead><tr><th>Date</th><th>Niveau</th><th>Opération</th><th>Résultat</th><th>Code</th><th>Durée</th><th>Détail</th><th>Corrélation</th></tr></thead>
+      <tbody>
+      {% for j in resultat.elements %}
+        <tr>
+          <td>{{ j.date|dateheure }}</td>
+          <td style="color:{{ {'ERROR':'#B42318','WARNING':'#A15207'}.get(j.niveau, 'inherit') }}">{{ j.niveau }}</td>
+          <td>{{ j.operation }}</td><td>{{ j.resultat }}</td><td>{{ j.code_erreur or '' }}</td>
+          <td>{% if j.duree_ms is not none %}{{ j.duree_ms }} ms{% endif %}</td>
+          <td>{{ j.detail or '' }}</td>
+          <td>{% if j.correlation_id %}<a href="{{ url_for('admin.journaux', correlation_id=j.correlation_id) }}">{{ j.correlation_id[:8] }}…</a>{% endif %}</td>
+        </tr>
+      {% endfor %}
+      </tbody>
+    </table>
+  </div>
+  {{ pagination(page, pages, 'admin.journaux', filtres) }}
+  {% else %}
+  <p class="vide">Aucune entrée.</p>
+  {% endif %}
+</section>
+{% endblock %}

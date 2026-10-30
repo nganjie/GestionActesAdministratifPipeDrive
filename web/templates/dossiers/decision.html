@@ -1,0 +1,45 @@
+{% extends "base.html" %}
+{% from "macros.html" import puce_statut, csrf with context %}
+{% block titre %}Décision {{ dossier.reference }}{% endblock %}
+{% block contenu %}
+<nav class="fil" aria-label="Fil d'Ariane"><a href="{{ url_for('dossiers.liste') }}">Dossiers</a><span aria-hidden="true">/</span>
+  <a class="mono" href="{{ url_for('dossiers.detail', dossier_id=dossier.id) }}">{{ dossier.reference }}</a><span aria-hidden="true">/</span><span>Décision</span></nav>
+
+<form method="post" class="carte" style="max-width:640px" novalidate>
+  {{ csrf() }}
+  <div class="carte-corps">
+    <div>
+      <span class="mono petit discret">{{ dossier.reference }} · {{ dossier.libelle_demarche }}</span>
+      <h1 style="font-size:22px;margin-top:4px">Décider du dossier</h1>
+    </div>
+    <p class="message message-info" style="margin:0">Statut : {{ puce_statut(dossier.statut) }}
+      {% if dossier.instructeur_nom %} · instruit par {{ dossier.instructeur_nom }}{% endif %} ·
+      {{ pieces|selectattr('fournie')|selectattr('fournie.etat', 'equalto', 'CONFORME')|list|length }} pièce(s) conforme(s) sur {{ pieces|length }}</p>
+    {% if dossier.statut != 'EN_ATTENTE_DECISION' %}
+    <p class="message message-attention" style="margin:0">Ce dossier n'est pas en attente de décision.</p>
+    {% endif %}
+    <fieldset style="margin:0;padding:0;border:0;display:flex;flex-direction:column;gap:10px">
+      <legend style="font-weight:600;margin-bottom:10px">Issue</legend>
+      <label class="carte" style="display:flex;gap:12px;padding:14px;cursor:pointer">
+        <input type="radio" name="issue" value="APPROUVE" style="width:18px;min-height:18px" {% if valeurs.get('issue') == 'APPROUVE' %}checked{% endif %}>
+        <span><strong>Approuver</strong><span class="discret" style="display:block">Le document est prêt à être remis au demandeur.</span></span>
+      </label>
+      <label class="carte" style="display:flex;gap:12px;padding:14px;cursor:pointer">
+        <input type="radio" name="issue" value="REJETE" style="width:18px;min-height:18px" {% if valeurs.get('issue') == 'REJETE' %}checked{% endif %}>
+        <span><strong>Rejeter</strong><span class="discret" style="display:block">Le dossier est clos. Un motif est obligatoire.</span></span>
+      </label>
+    </fieldset>
+    <div class="champ{% if erreurs.motif %} invalide{% endif %}">
+      <label for="motif">Motif <span class="aide">— obligatoire en cas de rejet (10 à 500 caractères)</span></label>
+      <textarea id="motif" name="motif" maxlength="500" {% if erreurs.motif %}aria-invalid="true" aria-describedby="motif-err"{% endif %}>{{ valeurs.get('motif', '') }}</textarea>
+      {% if erreurs.motif %}<span id="motif-err" class="erreur-champ">{{ erreurs.motif }}</span>{% endif %}
+      <span class="petit discret">Le motif reste dans le dossier ; Pipedrive reçoit seulement « Dossier rejeté ».</span>
+    </div>
+    <div style="display:flex;flex-wrap:wrap;gap:10px;align-items:center">
+      <span class="petit discret">Décision définitive et tracée</span>
+      <a class="bouton" style="margin-left:auto" href="{{ url_for('dossiers.detail', dossier_id=dossier.id) }}">Annuler</a>
+      <button class="bouton bouton-principal" type="submit">Enregistrer la décision</button>
+    </div>
+  </div>
+</form>
+{% endblock %}

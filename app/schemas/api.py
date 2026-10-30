@@ -167,6 +167,7 @@ class DecisionSortie(Sortie):
     issue: IssueDecision
     motif: str | None
     auteur_id: uuid.UUID
+    auteur_nom: str | None = None
     date: datetime
 
 
@@ -211,7 +212,9 @@ class DossierSortie(BaseModel):
     donnees_specifiques: dict[str, Any]
     demandeur: DemandeurSortie
     createur_id: uuid.UUID
+    createur_nom: str | None = None
     instructeur_id: uuid.UUID | None
+    instructeur_nom: str | None = None
     pieces_requises: list[PieceRequiseDossierSortie]
     pieces_fournies: list[PieceFournieSortie]
     decision: DecisionSortie | None
@@ -262,6 +265,7 @@ class EvenementHistoriqueSortie(Sortie):
     ancien_statut: Statut | None
     nouveau_statut: Statut | None
     auteur_id: uuid.UUID | None
+    auteur_nom: str | None = None
     date: datetime
     commentaire: str | None
 

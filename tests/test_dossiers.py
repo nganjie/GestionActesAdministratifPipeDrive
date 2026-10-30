@@ -283,3 +283,10 @@ async def test_annulation(client, agents):
     assert r.json()["statut"] == "ANNULE"
     # la clé de doublon est libérée
     assert (await client.post(API, headers=agents["accueil"], json=dossier_deces())).status_code == 201
+
+
+async def test_noms_des_agents_exposes(client, agents):
+    d = await creer(client, agents)
+    assert d["createur_nom"] == "Accueil"
+    historique = (await client.get(f"{API}/{d['id']}/historique", headers=agents["accueil"])).json()
+    assert historique[0]["auteur_nom"] == "Accueil"

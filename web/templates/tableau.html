@@ -1,0 +1,108 @@
+{% extends "base.html" %}
+{% from "macros.html" import puce_statut, puce_sync with context %}
+{% block titre %}Tableau de bord{% endblock %}
+{% block contenu %}
+<div class="entete">
+  <div>
+    <h1>Bonjour, {{ utilisateur.nom.split()[0] }}</h1>
+    <p class="discret" style="margin:4px 0 0">{{ utilisateur.role|role }}{% if utilisateur.categorie %} · {{ utilisateur.categorie|categorie }}{% endif %} · {{ total }} dossier(s) dans votre périmètre</p>
+  </div>
+  {% if utilisateur.role == 'ACCUEIL' %}
+  <div class="actions"><a class="bouton bouton-principal" href="{{ url_for('dossiers.nouveau') }}">Nouveau dossier</a></div>
+  {% endif %}
+</div>
+
+<section class="grille-kpi" aria-label="Indicateurs">
+  {% for r in repartition if r.code in ('BROUILLON','SOUMIS','INCOMPLET','EN_INSTRUCTION','EN_ATTENTE_DECISION','APPROUVE') %}
+  <a class="carte kpi" href="{{ url_for('dossiers.liste', statut=r.code) }}">
+    <span class="discret">{{ r.libelle }}</span>
+    <span class="kpi-valeur">{{ r.n }}</span>
+  </a>
+  {% endfor %}
+</section>
+
+<div class="colonnes">
+  <section class="carte principale" aria-labelledby="file-titre">
+    <div class="carte-entete">
+      <h2 id="file-titre">{% if utilisateur.role == 'ADMIN' %}Derniers dossiers{% else %}Ma file de travail{% endif %}</h2>
+      <span class="petit discret">{% if utilisateur.role != 'ADMIN' %}dossiers qui attendent une action de votre rôle{% endif %}</span>
+      <a class="droite" href="{{ url_for('dossiers.liste') }}">Tous les dossiers</a>
+    </div>
+    {% set lignes = file if utilisateur.role != 'ADMIN' else recents %}
+    {% if lignes %}
+    <div class="defilement">
+      <table>
+        <thead><tr><th>Dossier</th><th>Demandeur</th><th>Statut</th><th>Pipedrive</th><th>Mis à jour</th></tr></thead>
+        <tbody>
+        {% for d in lignes %}
+          <tr>
+            <td><a class="mono" href="{{ url_for('dossiers.detail', dossier_id=d.id) }}">{{ d.reference }}</a>
+              <div class="petit discret">{{ d.libelle_demarche }}</div></td>
+            <td>{{ d.demandeur }}</td>
+            <td>{{ puce_statut(d.statut) }}</td>
+            <td>{{ puce_sync(d.synchronisation) }}</td>
+            <td class="mono petit">{{ d.maj_le|dateheure }}</td>
+          </tr>
+        {% endfor %}
+        </tbody>
+      </table>
+    </div>
+    {% else %}
+    <p class="vide">Aucun dossier n'attend d'action de votre part.</p>
+    {% endif %}
+  </section>
+
+  <div class="laterale">
+    <section class="carte" aria-labelledby="repart-titre">
+      <div class="carte-corps">
+        <h2 id="repart-titre">Dossiers par statut</h2>
+        {% set couleurs = {'BROUILLON':'#9A9EA6','SOUMIS':'#5B7DB8','INCOMPLET':'#D9822B','EN_INSTRUCTION':'#2F55D4','EN_ATTENTE_DECISION':'#7C4DDB','APPROUVE':'#3F9C82','DELIVRE':'#0F6B57','REJETE':'#C4554B','ANNULE':'#C4C6C0'} %}
+        <div class="barre-repartition" aria-hidden="true">
+          {% for r in repartition if r.n %}<span style="flex:{{ r.n }} 1 0;background:{{ couleurs[r.code] }}"></span>{% endfor %}
+        </div>
+        <ul class="liste-simple">
+          {% for r in repartition %}
+          <li><span style="width:10px;height:10px;border-radius:3px;background:{{ couleurs[r.code] }}"></span>
+            <a href="{{ url_for('dossiers.liste', statut=r.code) }}" style="color:inherit;text-decoration:none">{{ r.libelle }}</a>
+            <span class="mono" style="margin-left:auto">{{ r.n }}</span></li>
+          {% endfor %}
+        </ul>
+      </div>
+    </section>
+
+    {% if utilisateur.role == 'ADMIN' %}
+    <section class="carte" aria-labelledby="pd-titre">
+      <div class="carte-corps">
+        <h2 id="pd-titre">Intégration Pipedrive</h2>
+        {% if sante %}
+          {% set n = sante.synchronisations %}
+          <ul class="liste-simple">
+            <li>{{ puce_sync('SYNCHRONISE') }}<span class="mono" style="margin-left:auto">{{ n.SYNCHRONISE }}</span></li>
+            <li>{{ puce_sync('EN_ATTENTE') }}<span class="mono" style="margin-left:auto">{{ n.EN_ATTENTE }}</span></li>
+            <li>{{ puce_sync('ECHEC') }}<span class="mono" style="margin-left:auto">{{ n.ECHEC }}</span></li>
+          </ul>
+          {% if not sante.configure %}<p class="message message-attention" style="margin:0">Jeton Pipedrive non configuré (PIPEDRIVE_API_TOKEN).</p>
+          {% elif sante.jeton_valide is false %}<p class="message message-erreur" style="margin:0">Jeton Pipedrive refusé.</p>{% endif %}
+          {% for r in synchros_echec %}<p class="petit" style="margin:0"><span class="mono">{{ r.code_erreur }}</span> — {{ r.derniere_erreur }}</p>{% endfor %}
+        {% else %}
+          <p class="discret" style="margin:0">État indisponible.</p>
+        {% endif %}
+        <a href="{{ url_for('admin.synchronisations') }}">Voir les synchronisations</a>
+      </div>
+    </section>
+    {% else %}
+    <section class="carte" aria-labelledby="recent-titre">
+      <div class="carte-corps">
+        <h2 id="recent-titre">Récemment modifiés</h2>
+        <ul class="liste-simple">
+          {% for d in recents %}
+          <li><a class="mono" href="{{ url_for('dossiers.detail', dossier_id=d.id) }}">{{ d.reference }}</a>
+            <span style="margin-left:auto">{{ puce_statut(d.statut) }}</span></li>
+          {% else %}<li class="discret">Aucun dossier.</li>{% endfor %}
+        </ul>
+      </div>
+    </section>
+    {% endif %}
+  </div>
+</div>
+{% endblock %}

@@ -1,0 +1,42 @@
+{% macro puce_statut(code) -%}
+<span class="puce {{ code|classe_statut }}">{{ code|statut }}</span>
+{%- endmacro %}
+
+{% macro puce_sync(etat) -%}
+{% set s = SYNCHRO.get(etat, SYNCHRO[None]) %}<span class="sync {{ s[1] }}">{{ s[0] }}</span>
+{%- endmacro %}
+
+{% macro csrf() -%}<input type="hidden" name="csrf" value="{{ csrf_token }}">{%- endmacro %}
+
+{% macro champ(nom, libelle, valeurs, erreurs, type="text", requis=False, aide=None, options=None, attrs="") -%}
+{% set err = erreurs.get(nom) %}
+<div class="champ{% if err %} invalide{% endif %}">
+  <label for="{{ nom }}" class="{% if requis %}obligatoire{% endif %}">{{ libelle }}
+    {% if aide %}<span class="aide">— {{ aide }}</span>{% endif %}</label>
+  {% if type == "select" %}
+  <select id="{{ nom }}" name="{{ nom }}" {% if requis %}required{% endif %}
+          {% if err %}aria-invalid="true" aria-describedby="{{ nom }}-err"{% endif %} {{ attrs|safe }}>
+    {% for valeur, texte in options %}
+    <option value="{{ valeur }}" {% if valeurs.get(nom) == valeur %}selected{% endif %}>{{ texte }}</option>
+    {% endfor %}
+  </select>
+  {% elif type == "textarea" %}
+  <textarea id="{{ nom }}" name="{{ nom }}" {% if requis %}required{% endif %}
+            {% if err %}aria-invalid="true" aria-describedby="{{ nom }}-err"{% endif %} {{ attrs|safe }}>{{ valeurs.get(nom, "") }}</textarea>
+  {% else %}
+  <input id="{{ nom }}" name="{{ nom }}" type="{{ type }}" value="{{ valeurs.get(nom, '') }}" {% if requis %}required{% endif %}
+         {% if err %}aria-invalid="true" aria-describedby="{{ nom }}-err"{% endif %} {{ attrs|safe }}>
+  {% endif %}
+  {% if err %}<span id="{{ nom }}-err" class="erreur-champ">{{ err }}</span>{% endif %}
+</div>
+{%- endmacro %}
+
+{% macro pagination(page, pages, point, params) -%}
+{% if pages > 1 %}
+<nav aria-label="Pagination" style="display:flex;gap:8px;align-items:center;justify-content:flex-end;padding:12px 20px;border-top:1px solid var(--bord)">
+  <span class="discret petit">Page {{ page }} sur {{ pages }}</span>
+  {% if page > 1 %}<a class="bouton bouton-petit" href="{{ url_for(point, page=page-1, **params) }}">Précédent</a>{% endif %}
+  {% if page < pages %}<a class="bouton bouton-petit" href="{{ url_for(point, page=page+1, **params) }}">Suivant</a>{% endif %}
+</nav>
+{% endif %}
+{%- endmacro %}

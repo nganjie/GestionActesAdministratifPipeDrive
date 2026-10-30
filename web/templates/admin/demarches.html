@@ -1,0 +1,66 @@
+{% extends "base.html" %}
+{% from "macros.html" import csrf with context %}
+{% block titre %}Démarches et pièces{% endblock %}
+{% block contenu %}
+<div class="entete"><div><h1>Démarches et pièces requises</h1>
+  <p class="discret" style="margin:4px 0 0">Les modifications s'appliquent aux nouveaux dossiers ; les dossiers existants conservent leur liste de pièces.</p></div></div>
+
+{% for d in demarches %}
+<section class="carte" id="{{ d.code }}" aria-labelledby="t-{{ d.code }}">
+  <div class="carte-entete">
+    <h2 id="t-{{ d.code }}">{{ d.libelle }}</h2>
+    <span class="petit discret">{{ d.categorie|categorie }} · <span class="mono">{{ d.code }}</span></span>
+    {% if d.actif %}<span class="puce statut-approuve">Active</span>{% else %}<span class="puce statut-annule">Désactivée</span>{% endif %}
+    <form method="post" action="{{ url_for('admin.modifier_demarche', code=d.code) }}" class="droite" style="display:flex;gap:8px;flex-wrap:wrap">
+      {{ csrf() }}
+      <label class="sr-only" for="lib-{{ d.code }}">Libellé</label>
+      <input id="lib-{{ d.code }}" name="libelle" value="{{ d.libelle }}" style="width:240px;min-height:34px">
+      <button class="bouton bouton-petit" type="submit">Renommer</button>
+    </form>
+    <form method="post" action="{{ url_for('admin.modifier_demarche', code=d.code) }}">
+      {{ csrf() }}<input type="hidden" name="actif" value="{{ 'false' if d.actif else 'true' }}">
+      <button class="bouton bouton-petit {% if d.actif %}bouton-danger{% endif %}" type="submit">{{ 'Désactiver' if d.actif else 'Activer' }}</button>
+    </form>
+  </div>
+  <div class="defilement">
+    <table>
+      <thead><tr><th>Pièce</th><th>Code</th><th>Obligatoire</th><th>État</th><th><span class="sr-only">Actions</span></th></tr></thead>
+      <tbody>
+      {% for p in d.pieces %}
+        <tr>
+          <td>
+            <form method="post" action="{{ url_for('admin.modifier_piece', code=d.code, piece_id=p.id) }}" style="display:flex;gap:8px">
+              {{ csrf() }}<label class="sr-only" for="pl-{{ p.id }}">Libellé</label>
+              <input id="pl-{{ p.id }}" name="libelle" value="{{ p.libelle }}" style="min-height:34px">
+              <button class="bouton bouton-petit" type="submit">OK</button>
+            </form>
+          </td>
+          <td class="mono petit">{{ p.code }}</td>
+          <td>
+            <form method="post" action="{{ url_for('admin.modifier_piece', code=d.code, piece_id=p.id) }}">
+              {{ csrf() }}<input type="hidden" name="obligatoire" value="{{ 'false' if p.obligatoire else 'true' }}">
+              <button class="bouton bouton-petit" type="submit" title="Basculer">{{ 'Oui' if p.obligatoire else 'Non' }}</button>
+            </form>
+          </td>
+          <td>{% if p.actif %}<span class="puce statut-approuve">Active</span>{% else %}<span class="puce statut-annule">Désactivée</span>{% endif %}</td>
+          <td>
+            <form method="post" action="{{ url_for('admin.modifier_piece', code=d.code, piece_id=p.id) }}">
+              {{ csrf() }}<input type="hidden" name="actif" value="{{ 'false' if p.actif else 'true' }}">
+              <button class="bouton bouton-petit {% if p.actif %}bouton-danger{% endif %}" type="submit">{{ 'Désactiver' if p.actif else 'Réactiver' }}</button>
+            </form>
+          </td>
+        </tr>
+      {% endfor %}
+      </tbody>
+    </table>
+  </div>
+  <form method="post" action="{{ url_for('admin.ajouter_piece', code=d.code) }}" class="carte-corps barre-filtres" style="border-top:1px solid var(--bord)">
+    {{ csrf() }}
+    <div class="champ"><label for="nc-{{ d.code }}">Code</label><input id="nc-{{ d.code }}" name="code" placeholder="EX_NOUVELLE_PIECE" pattern="[A-Z0-9_]+" required></div>
+    <div class="champ large"><label for="nl-{{ d.code }}">Libellé</label><input id="nl-{{ d.code }}" name="libelle" required></div>
+    <label style="display:flex;gap:8px;align-items:center;min-height:42px"><input type="checkbox" name="obligatoire" value="true" checked style="width:18px;min-height:18px"> Obligatoire</label>
+    <button class="bouton" type="submit">Ajouter la pièce</button>
+  </form>
+</section>
+{% endfor %}
+{% endblock %}

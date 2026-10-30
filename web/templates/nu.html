@@ -1,0 +1,12 @@
+<!doctype html>
+<html lang="fr">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <title>{% block titre %}Actes{% endblock %} — Actes</title>
+  <link rel="stylesheet" href="{{ url_for('static', filename='app.css') }}">
+</head>
+<body>
+<main class="contenu" style="max-width:720px;margin:0 auto">{% block contenu %}{% endblock %}</main>
+</body>
+</html>

@@ -1,0 +1,25 @@
+{% extends "base.html" %}
+{% from "macros.html" import puce_statut, csrf with context %}
+{% block titre %}Annuler {{ dossier.reference }}{% endblock %}
+{% block contenu %}
+<nav class="fil" aria-label="Fil d'Ariane"><a href="{{ url_for('dossiers.liste') }}">Dossiers</a><span aria-hidden="true">/</span>
+  <a class="mono" href="{{ url_for('dossiers.detail', dossier_id=dossier.id) }}">{{ dossier.reference }}</a><span aria-hidden="true">/</span><span>Annulation</span></nav>
+
+<form method="post" class="carte" style="max-width:640px" novalidate>
+  {{ csrf() }}
+  <div class="carte-corps">
+    <h1 style="font-size:22px">Annuler le dossier {{ dossier.reference }}</h1>
+    <p style="margin:0">{{ dossier.libelle_demarche }} — {{ dossier.demandeur.prenom }} {{ dossier.demandeur.nom }} · {{ puce_statut(dossier.statut) }}</p>
+    <p class="message message-attention" style="margin:0">L'annulation est définitive. Le dossier ne pourra plus évoluer et le deal Pipedrive sera marqué perdu.</p>
+    <div class="champ{% if erreurs.motif %} invalide{% endif %}">
+      <label for="motif" class="obligatoire">Motif de l'annulation</label>
+      <textarea id="motif" name="motif" maxlength="500" required {% if erreurs.motif %}aria-invalid="true" aria-describedby="motif-err"{% endif %}>{{ motif }}</textarea>
+      {% if erreurs.motif %}<span id="motif-err" class="erreur-champ">{{ erreurs.motif }}</span>{% endif %}
+    </div>
+    <div style="display:flex;gap:10px;justify-content:flex-end">
+      <a class="bouton" href="{{ url_for('dossiers.detail', dossier_id=dossier.id) }}">Retour</a>
+      <button class="bouton bouton-danger-plein" type="submit">Confirmer l'annulation</button>
+    </div>
+  </div>
+</form>
+{% endblock %}

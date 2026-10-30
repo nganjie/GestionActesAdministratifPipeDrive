@@ -1,0 +1,65 @@
+{% extends "base.html" %}
+{% from "macros.html" import champ, csrf with context %}
+{% block titre %}Comptes et rôles{% endblock %}
+{% block contenu %}
+<div class="entete"><div><h1>Comptes et rôles</h1>
+  <p class="discret" style="margin:4px 0 0">Les comptes ne sont jamais supprimés : ils sont désactivés (traçabilité des auteurs).</p></div></div>
+
+<div class="colonnes">
+  <section class="carte principale" aria-labelledby="liste-titre">
+    <div class="carte-entete"><h2 id="liste-titre">{{ comptes|length }} compte(s)</h2></div>
+    <div class="defilement">
+      <table>
+        <thead><tr><th>Nom</th><th>Identifiant</th><th>Rôle</th><th>État</th><th><span class="sr-only">Actions</span></th></tr></thead>
+        <tbody>
+        {% for c in comptes %}
+          <tr>
+            <td><strong>{{ c.nom }}</strong>{% if c.id == utilisateur.id %} <span class="petit discret">(vous)</span>{% endif %}</td>
+            <td class="mono">{{ c.identifiant }}</td>
+            <td>{{ c.role|role }}{% if c.categorie %}<div class="petit discret">{{ c.categorie|categorie }}</div>{% endif %}</td>
+            <td>{% if c.actif %}<span class="puce statut-approuve">Actif</span>{% else %}<span class="puce statut-annule">Désactivé</span>{% endif %}</td>
+            <td>
+              <details><summary class="bouton bouton-petit">Gérer</summary>
+                <div style="display:flex;flex-direction:column;gap:10px;margin-top:8px;min-width:260px">
+                  <form method="post" action="{{ url_for('admin.modifier_utilisateur', utilisateur_id=c.id) }}" style="display:flex;gap:8px">
+                    {{ csrf() }}
+                    <label class="sr-only" for="role-{{ c.id }}">Rôle</label>
+                    <select id="role-{{ c.id }}" name="role">{% for code, libelle in roles.items() %}<option value="{{ code }}" {% if c.role == code %}selected{% endif %}>{{ libelle }}</option>{% endfor %}</select>
+                    <button class="bouton bouton-petit" type="submit">Changer</button>
+                  </form>
+                  <form method="post" action="{{ url_for('admin.modifier_utilisateur', utilisateur_id=c.id) }}" style="display:flex;gap:8px">
+                    {{ csrf() }}
+                    <label class="sr-only" for="mdp-{{ c.id }}">Nouveau mot de passe</label>
+                    <input id="mdp-{{ c.id }}" name="mot_de_passe" type="password" minlength="12" placeholder="Nouveau mot de passe" autocomplete="new-password">
+                    <button class="bouton bouton-petit" type="submit">Réinitialiser</button>
+                  </form>
+                  {% if c.id != utilisateur.id %}
+                  <form method="post" action="{{ url_for('admin.modifier_utilisateur', utilisateur_id=c.id) }}">
+                    {{ csrf() }}<input type="hidden" name="actif" value="{{ 'false' if c.actif else 'true' }}">
+                    <button class="bouton bouton-petit {% if c.actif %}bouton-danger{% endif %}" type="submit">{{ 'Désactiver' if c.actif else 'Réactiver' }}</button>
+                  </form>
+                  {% endif %}
+                </div>
+              </details>
+            </td>
+          </tr>
+        {% endfor %}
+        </tbody>
+      </table>
+    </div>
+  </section>
+
+  <form method="post" class="carte laterale" novalidate aria-labelledby="creer-titre">
+    {{ csrf() }}
+    <div class="carte-corps">
+      <h2 id="creer-titre">Créer un compte</h2>
+      {{ champ('nom', 'Nom complet', valeurs, erreurs, requis=True) }}
+      {{ champ('identifiant', 'Identifiant', valeurs, erreurs, requis=True, aide='lettres, chiffres, . _ -') }}
+      {{ champ('mot_de_passe', 'Mot de passe initial', {}, erreurs, type='password', requis=True, aide='12 caractères minimum', attrs='autocomplete="new-password"') }}
+      {{ champ('role', 'Rôle', valeurs, erreurs, type='select', requis=True, options=roles.items()) }}
+      {{ champ('categorie', 'Catégorie', valeurs, erreurs, type='select', options=[('', 'Déduite du rôle')] + categories.items()|list, aide='pour les agents instructeurs') }}
+      <button class="bouton bouton-principal" type="submit">Créer le compte</button>
+    </div>
+  </form>
+</div>
+{% endblock %}

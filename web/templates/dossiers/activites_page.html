@@ -1,0 +1,8 @@
+{% extends "base.html" %}
+{% block titre %}Activités Pipedrive{% endblock %}
+{% block contenu %}
+<nav class="fil" aria-label="Fil d'Ariane"><a href="{{ url_for('dossiers.detail', dossier_id=dossier_id, onglet='pipedrive') }}">Retour au dossier</a></nav>
+<section class="carte"><div class="carte-corps"><h1 style="font-size:22px">Activités Pipedrive</h1>
+{% include "partials/activites.html" %}
+</div></section>
+{% endblock %}

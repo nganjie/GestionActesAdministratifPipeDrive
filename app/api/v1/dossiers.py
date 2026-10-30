@@ -7,7 +7,7 @@ from fastapi import APIRouter, Query, status
 from sqlalchemy import select
 
 from app.api.deps import Courant, Lecture, Session
-from app.api.v1.presentation import dossier_complet, dossier_resume
+from app.api.v1.presentation import dossier_complet, dossier_resume, noms_utilisateurs
 from app.db.models import ReferenceSynchro
 from app.domain.enums import Categorie, EtatSynchro, Statut
 from app.domain.projection import retirer_marqueur
@@ -123,8 +123,10 @@ async def annulation(dossier_id: uuid.UUID, donnees: AnnulationEntree, courant: 
             summary="Consulter l'historique (UC11)")
 async def historique(dossier_id: uuid.UUID, courant: Courant,
                      session: Session) -> list[EvenementHistoriqueSortie]:
-    return [EvenementHistoriqueSortie.model_validate(e)
-            for e in await dossiers.historique(session, courant, dossier_id)]
+    evenements = await dossiers.historique(session, courant, dossier_id)
+    noms = await noms_utilisateurs(session, {e.auteur_id for e in evenements})
+    return [EvenementHistoriqueSortie.model_validate(e).model_copy(update={"auteur_nom": noms.get(e.auteur_id)})
+            for e in evenements]
 
 
 @router.get("/{dossier_id}/synchronisation", response_model=SynchronisationSortie,

@@ -1,0 +1,12 @@
+{% if utilisateur %}{% extends "base.html" %}{% else %}{% extends "nu.html" %}{% endif %}
+{% block titre %}{{ titre }}{% endblock %}
+{% block contenu %}
+<section class="carte" style="max-width:640px">
+  <div class="carte-corps">
+    <h1>{{ titre }}</h1>
+    <p style="margin:0">{{ message }}</p>
+    {% if code %}<p class="petit discret mono" style="margin:0">{{ code }}</p>{% endif %}
+    <div><a class="bouton" href="{{ url_for('tableau.accueil') }}">Retour au tableau de bord</a></div>
+  </div>
+</section>
+{% endblock %}

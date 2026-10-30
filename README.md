@@ -1,7 +1,13 @@
 # API intermédiaire — actes administratifs / Pipedrive
 
 API REST (FastAPI) qui orchestre la gestion des actes administratifs d'une mairie et les échanges avec
-Pipedrive. Projet académique ENSPD — Niveau 5 · Architecture Logicielle & Objets répartis.
+Pipedrive, et application web (Flask) utilisée par les agents. Projet académique ENSPD — Niveau 5 ·
+Architecture Logicielle & Objets répartis.
+
+```
+Navigateur ──▶ Application web Flask (port 5000) ──▶ API FastAPI (port 8000) ──▶ Pipedrive
+               pages HTML, session serveur          règles métier, base, worker
+```
 
 Références : [cahier des charges v3.0](docs/), [FRS v3.0](docs/FRS_Gestion_Actes_Administratifs_Pipedrive_v3.0.pdf),
 [ISD-001 v2.1](docs/ISD-001_Pipedrive_v2.1.pdf).
@@ -31,8 +37,12 @@ app/
 ├── workers/           worker de synchronisation (outbox, relances, idempotence)
 ├── scripts/           initialisation de Pipedrive (pipeline, étapes, types d'activités)
 └── db/                modèle SQLAlchemy (AF §10)
+web/                   application web des agents (Flask + Jinja + htmx), cliente de l'API
+├── routes/            connexion, tableau de bord, dossiers, administration
+├── templates/         pages (charte de la maquette)
+└── api.py             client de l'API (renouvellement de session, erreurs par champ)
 alembic/               migrations PostgreSQL
-tests/                 49 tests, dont un faux Pipedrive (respx)
+tests/                 tests de l'API (faux Pipedrive) et tests de bout en bout de l'application web
 ```
 
 ## Démarrage rapide
@@ -77,6 +87,14 @@ uv run python -m app.workers.sync_worker
 ```
 
 Pour une démonstration en un seul processus, `SYNC_WORKER_EMBARQUE=true` lance le worker dans l'API.
+
+Dans un troisième terminal, l'application web des agents :
+
+```bash
+uv run flask --app web.app run --port 5000
+```
+
+Puis ouvrir http://127.0.0.1:5000 et se connecter avec `ADMIN_IDENTIFIANT` / `ADMIN_MOT_DE_PASSE`.
 
 ### Initialiser Pipedrive
 
@@ -153,3 +171,25 @@ Format d'erreur unique (FRS §7.2) :
   par les tests de contrat sur un compte sandbox (ISD point P9).
 - Le choix de Python/FastAPI à la place de Spring Boot (CDC §7.3) doit être validé par l'encadrant (P8).
 - Les pièces requises par démarche sont des hypothèses de travail, modifiables par l'administrateur (P2).
+
+## Application web des agents
+
+| Écran | Rôles | Cas d'utilisation |
+|---|---|---|
+| Connexion, déconnexion, renouvellement automatique de session | tous | UC01 |
+| Tableau de bord : file de travail du rôle, répartition par statut, état de Pipedrive (admin) | tous | — |
+| Liste des dossiers : filtres (statut, démarche, catégorie, référence, demandeur, dates), pagination | tous | UC05 |
+| Nouveau dossier : formulaire propre à chaque démarche, erreurs par champ, alerte de doublon | accueil | UC03 |
+| Fiche du dossier : frise du cycle de vie, actions permises au rôle, onglets résumé, pièces, historique, Pipedrive | tous | UC04, UC11 |
+| Modification du brouillon | accueil | UC06 |
+| Déclaration et mise à jour des pièces, vérification de complétude | accueil, instructeurs | UC07, UC08 |
+| Soumission, blocage motivé, instruction, délivrance | selon le rôle | UC09 |
+| Décision (approbation ou rejet motivé) | responsable | UC10 |
+| Annulation motivée | accueil, responsable | UC12 |
+| Comptes et rôles | admin | UC02 |
+| Démarches et pièces requises | admin | UC16 |
+| Synchronisation Pipedrive : santé, liste, relances | admin | UC13 à UC15 |
+| Journaux techniques | admin | UC17 |
+
+Sécurité : les jetons de l'API restent côté serveur (le navigateur ne reçoit qu'un identifiant de session),
+protection CSRF sur tous les formulaires, cookies `HttpOnly` et `SameSite=Lax`, redirections internes uniquement.

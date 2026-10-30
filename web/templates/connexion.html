@@ -1,0 +1,60 @@
+<!doctype html>
+<html lang="fr">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <title>Connexion — Actes</title>
+  <link rel="preconnect" href="https://fonts.googleapis.com">
+  <link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=IBM+Plex+Sans:wght@400;500;600;700&family=IBM+Plex+Mono:wght@400;500&display=swap">
+  <link rel="stylesheet" href="{{ url_for('static', filename='app.css') }}">
+</head>
+<body>
+{% from "macros.html" import csrf with context %}
+<div class="connexion">
+  <section class="connexion-pres" aria-label="Présentation">
+    <div class="marque" style="color:#fff">
+      <span class="marque-logo" style="background:#15715C" aria-hidden="true">
+        <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><path d="M7 3h7l5 5v13H7z"/><path d="M14 3v5h5"/><path d="M10 13h6M10 17h4"/></svg>
+      </span>
+      <span><strong>Actes</strong><small style="color:#A9C7BE">Commune de démonstration</small></span>
+    </div>
+    <div style="display:flex;flex-direction:column;gap:18px;max-width:520px">
+      <h1>Chaque dossier,<br>de la demande à la délivrance.</h1>
+      <p style="margin:0;font-size:16px;color:#C5DAD3">État civil et certification : mariage, décès, copie d'acte,
+        légalisation de signature, certification conforme.</p>
+      <ul style="margin:0;padding-left:18px;display:flex;flex-direction:column;gap:8px">
+        <li>Statuts, pièces et décisions tracés dans un historique non modifiable</li>
+        <li>Suivi miroir dans Pipedrive, sans jamais y envoyer de document</li>
+        <li>Accès limité à votre rôle et à votre catégorie</li>
+      </ul>
+    </div>
+    <p class="petit" style="margin:0;color:#8FB3A8">Prototype académique — ENSPD · données fictives</p>
+  </section>
+
+  <main class="connexion-form">
+    <form method="post" novalidate>
+      {{ csrf() }}
+      <div>
+        <h2 style="font-size:26px">Connexion</h2>
+        <p class="discret" style="margin:6px 0 0">Utilisez l'identifiant fourni par l'administrateur.</p>
+      </div>
+      {% with messages = get_flashed_messages(with_categories=true) %}
+      {% for categorie, message in messages %}<div class="message message-{{ categorie }}" role="status">{{ message }}</div>{% endfor %}
+      {% endwith %}
+      {% if erreur %}<div class="message message-erreur" role="alert">{{ erreur }}</div>{% endif %}
+      <div class="champ">
+        <label for="identifiant">Identifiant</label>
+        <input id="identifiant" name="identifiant" autocomplete="username" value="{{ identifiant }}" required autofocus>
+      </div>
+      <div class="champ">
+        <label for="mot_de_passe">Mot de passe</label>
+        <input id="mot_de_passe" name="mot_de_passe" type="password" autocomplete="current-password" required>
+      </div>
+      <button class="bouton bouton-principal" type="submit" style="min-height:46px">Se connecter</button>
+      <p class="petit discret" style="margin:0">Session de 30 minutes, renouvelée automatiquement pendant 8 heures.
+        Après 5 échecs, le compte est bloqué 15 minutes.</p>
+    </form>
+  </main>
+</div>
+</body>
+</html>

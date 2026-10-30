@@ -1,0 +1,207 @@
+{% extends "base.html" %}
+{% from "macros.html" import puce_statut, puce_sync, csrf with context %}
+{% block titre %}{{ dossier.reference }}{% endblock %}
+{% block contenu %}
+<nav class="fil" aria-label="Fil d'Ariane"><a href="{{ url_for('dossiers.liste') }}">Dossiers</a><span aria-hidden="true">/</span>
+  <span class="mono">{{ dossier.reference }}</span></nav>
+
+<header class="entete" style="align-items:flex-start">
+  <div style="flex:1 1 420px;display:flex;flex-direction:column;gap:8px;min-width:0">
+    <div style="display:flex;flex-wrap:wrap;gap:8px;align-items:center">
+      <span class="mono discret">{{ dossier.reference }}</span>
+      {{ puce_statut(dossier.statut) }}
+      <span class="puce" style="background:#F4F4F0">Pipedrive : {{ puce_sync(dossier.synchronisation.etat) }}</span>
+    </div>
+    <h1>{{ dossier.libelle_demarche }} — {{ dossier.demandeur.prenom }} {{ dossier.demandeur.nom }}</h1>
+    <p class="discret" style="margin:0">{{ dossier.objet }} · créé le {{ dossier.cree_le|date }}{% if dossier.createur_nom %} par {{ dossier.createur_nom }}{% endif %}{% if dossier.instructeur_nom %} · instruit par {{ dossier.instructeur_nom }}{% endif %}</p>
+  </div>
+  <div class="actions" style="align-items:flex-start">
+    {% for a in actions %}
+      {% if a.type == 'transition' and not a.motif %}
+      <form method="post" action="{{ url_for('dossiers.transition', dossier_id=dossier.id) }}" class="en-ligne">
+        {{ csrf() }}<input type="hidden" name="cible" value="{{ a.cible }}">
+        <button class="bouton {% if a.principale %}bouton-principal{% endif %}" type="submit">{{ a.libelle }}</button>
+      </form>
+      {% elif a.type == 'verification' %}
+      <form method="post" action="{{ url_for('dossiers.verification', dossier_id=dossier.id) }}" class="en-ligne">
+        {{ csrf() }}<button class="bouton" type="submit">{{ a.libelle }}</button>
+      </form>
+      {% elif a.type == 'decision' %}
+      <a class="bouton bouton-principal" href="{{ url_for('dossiers.decision', dossier_id=dossier.id) }}">{{ a.libelle }}</a>
+      {% elif a.type == 'annulation' %}
+      <a class="bouton bouton-danger" href="{{ url_for('dossiers.annulation', dossier_id=dossier.id) }}">{{ a.libelle }}</a>
+      {% elif a.type == 'modification' %}
+      <a class="bouton" href="{{ url_for('dossiers.modifier', dossier_id=dossier.id) }}">{{ a.libelle }}</a>
+      {% endif %}
+    {% endfor %}
+  </div>
+</header>
+
+<ol class="frise carte" aria-label="Cycle de vie du dossier">
+  {% if dossier.statut == 'ANNULE' %}
+  <li class="bloque"><span class="rond">×</span><span><span class="nom">Dossier annulé</span>
+    <span class="petit discret" style="display:block">aucune action possible</span></span></li>
+  {% else %}
+  {% for e in frise %}
+  <li class="{{ e.etat }}">
+    <span class="rond">{% if e.etat == 'fait' %}✓{% else %}{{ e.numero }}{% endif %}</span>
+    <span class="nom">{{ e.libelle }}</span>
+    {% if not loop.last %}<span class="trait" aria-hidden="true"></span>{% endif %}
+  </li>
+  {% endfor %}
+  {% endif %}
+</ol>
+
+{% for a in actions if a.type == 'transition' and a.motif %}
+<details class="carte">
+  <summary class="carte-corps" style="cursor:pointer;font-weight:600">{{ a.libelle }}</summary>
+  <form method="post" action="{{ url_for('dossiers.transition', dossier_id=dossier.id) }}" class="carte-corps" style="padding-top:0">
+    {{ csrf() }}<input type="hidden" name="cible" value="{{ a.cible }}">
+    <div class="champ"><label for="motif-{{ a.cible }}" class="obligatoire">Motif</label>
+      <textarea id="motif-{{ a.cible }}" name="motif" minlength="10" maxlength="500" required>{% if manquantes %}Pièces manquantes ou à corriger : {{ manquantes|map(attribute='libelle')|join(', ') }}{% endif %}</textarea></div>
+    <div><button class="bouton" type="submit">Confirmer</button></div>
+  </form>
+</details>
+{% endfor %}
+
+<div class="colonnes">
+  <section class="carte principale">
+    <nav class="onglets" aria-label="Sections du dossier">
+      {% set libelles = {'resume': 'Résumé', 'pieces': 'Pièces', 'historique': 'Historique', 'pipedrive': 'Pipedrive'} %}
+      {% set compteurs = {'resume': '', 'pieces': (pieces|length - manquantes|length)|string ~ '/' ~ pieces|length, 'historique': historique|length, 'pipedrive': dossier.synchronisation.objets|length} %}
+      {% for code, libelle in libelles.items() %}
+      <a href="{{ url_for('dossiers.detail', dossier_id=dossier.id, onglet=code) }}" {% if onglet == code %}aria-current="page"{% endif %}>
+        {{ libelle }}<span class="mono petit discret">{{ compteurs[code] }}</span></a>
+      {% endfor %}
+    </nav>
+
+    {% if onglet == 'resume' %}
+    <div class="carte-corps">
+      <dl class="donnees">
+        <div><dt>Démarche</dt><dd>{{ dossier.libelle_demarche }} · {{ dossier.categorie|categorie }}</dd></div>
+        <div><dt>Objet</dt><dd>{{ dossier.objet }}</dd></div>
+        {% for libelle, valeur in resume %}<div><dt>{{ libelle }}</dt><dd>{{ valeur }}</dd></div>{% endfor %}
+      </dl>
+      {% if dossier.decision %}
+      <div class="message {% if dossier.decision.issue == 'APPROUVE' %}message-succes{% else %}message-erreur{% endif %}">
+        <div><strong>Décision : {{ dossier.decision.issue|statut }}</strong> le {{ dossier.decision.date|dateheure }}{% if dossier.decision.auteur_nom %} par {{ dossier.decision.auteur_nom }}{% endif %}
+          {% if dossier.decision.motif %}<div>Motif : {{ dossier.decision.motif }}</div>{% endif %}</div>
+      </div>
+      {% endif %}
+      <p class="message message-info" style="margin:0">Ces données restent dans la base de la mairie. Pipedrive ne reçoit que le nom, le téléphone et l'e-mail du demandeur.</p>
+    </div>
+
+    {% elif onglet == 'pieces' %}
+    <div class="carte-corps">
+      {% if manquantes %}
+      <div class="message message-attention">{{ manquantes|length }} pièce(s) obligatoire(s) manquante(s) ou à corriger : {{ manquantes|map(attribute='libelle')|join(', ') }}.</div>
+      {% else %}
+      <div class="message message-succes">Dossier complet : toutes les pièces obligatoires sont conformes.</div>
+      {% endif %}
+      <div class="defilement">
+        <table>
+          <thead><tr><th>Pièce requise</th><th>État</th><th>Reçue le</th><th>Observation</th>{% if peut_pieces %}<th><span class="sr-only">Actions</span></th>{% endif %}</tr></thead>
+          <tbody>
+          {% for p in pieces %}
+            <tr>
+              <td><strong>{{ p.libelle }}</strong>{% if not p.obligatoire %} <span class="petit discret">(facultative)</span>{% endif %}</td>
+              <td>{% if p.fournie %}<span class="puce {{ 'statut-approuve' if p.fournie.etat == 'CONFORME' else 'statut-incomplet' }}">{{ p.fournie.etat|etat_piece }}</span>{% else %}<span class="puce statut-brouillon">Non déclarée</span>{% endif %}</td>
+              <td class="mono petit">{{ p.fournie.date_reception|date if p.fournie else '—' }}</td>
+              <td>{{ p.fournie.observation or '' if p.fournie else '' }}</td>
+              {% if peut_pieces %}
+              <td>
+                {% if p.fournie %}
+                <details><summary class="bouton bouton-petit">Modifier</summary>
+                  <form method="post" action="{{ url_for('dossiers.maj_piece', dossier_id=dossier.id, piece_id=p.fournie.id) }}" style="display:flex;flex-direction:column;gap:8px;margin-top:8px;min-width:240px">
+                    {{ csrf() }}
+                    <label class="sr-only" for="etat-{{ p.fournie.id }}">État</label>
+                    <select id="etat-{{ p.fournie.id }}" name="etat">
+                      {% for code in ('CONFORME', 'A_CORRIGER', 'RETIREE') %}<option value="{{ code }}" {% if p.fournie.etat == code %}selected{% endif %}>{{ code|etat_piece }}</option>{% endfor %}
+                    </select>
+                    <label class="sr-only" for="obs-{{ p.fournie.id }}">Observation</label>
+                    <input id="obs-{{ p.fournie.id }}" name="observation" value="{{ p.fournie.observation or '' }}" placeholder="Observation" maxlength="500">
+                    <button class="bouton bouton-petit" type="submit">Enregistrer</button>
+                  </form>
+                </details>
+                {% else %}
+                <form method="post" action="{{ url_for('dossiers.declarer_piece', dossier_id=dossier.id) }}" style="display:flex;flex-wrap:wrap;gap:8px;align-items:center">
+                  {{ csrf() }}<input type="hidden" name="code_piece" value="{{ p.code }}">
+                  <label class="sr-only" for="date-{{ p.code }}">Date de réception</label>
+                  <input id="date-{{ p.code }}" type="date" name="date_reception" value="{{ aujourdhui }}" max="{{ aujourdhui }}" style="width:150px;min-height:34px">
+                  <label class="sr-only" for="etatn-{{ p.code }}">État</label>
+                  <select id="etatn-{{ p.code }}" name="etat" style="width:140px;min-height:34px"><option value="CONFORME">Conforme</option><option value="A_CORRIGER">À corriger</option></select>
+                  <button class="bouton bouton-petit bouton-principal" type="submit">Déclarer</button>
+                </form>
+                {% endif %}
+              </td>
+              {% endif %}
+            </tr>
+          {% endfor %}
+          </tbody>
+        </table>
+      </div>
+      <p class="petit discret" style="margin:0">Les pièces sont présentées au guichet et déclarées ici. Aucun fichier n'est téléversé ni transmis à Pipedrive.
+        {% if not peut_pieces %}Les pièces ne sont plus modifiables dans ce statut ou pour votre rôle.{% endif %}</p>
+    </div>
+
+    {% elif onglet == 'historique' %}
+    <div class="carte-corps">
+      <p class="petit discret" style="margin:0">Historique en ajout seul : aucune entrée ne peut être modifiée ni supprimée.</p>
+      <ol class="chrono">
+        {% for e in historique|reverse %}
+        <li><span class="point" aria-hidden="true"></span>
+          <div style="display:flex;flex-direction:column;gap:2px">
+            <div><span class="mono petit discret">E{{ e.numero }}</span> <strong>{{ e.type|evenement }}</strong>
+              {% if e.nouveau_statut and e.ancien_statut %} : {{ e.ancien_statut|statut }} → {{ e.nouveau_statut|statut }}{% endif %}</div>
+            {% if e.commentaire %}<div>{{ e.commentaire }}</div>{% endif %}
+            <div class="petit discret">{{ e.date|dateheure }}{% if e.auteur_nom %} · {{ e.auteur_nom }}{% endif %}</div>
+          </div></li>
+        {% endfor %}
+      </ol>
+    </div>
+
+    {% elif onglet == 'pipedrive' %}
+    <div class="carte-corps">
+      <h3>Objets synchronisés</h3>
+      {% if dossier.synchronisation.objets %}
+      <div class="defilement">
+        <table>
+          <thead><tr><th>Objet</th><th>État</th><th>ID Pipedrive</th><th>Tentatives</th><th>Dernière erreur</th></tr></thead>
+          <tbody>
+          {% for o in dossier.synchronisation.objets %}
+          <tr><td>{{ o.objet|objet_synchro }}</td><td>{{ puce_sync(o.etat) }}</td><td class="mono">{{ o.id_pipedrive or '—' }}</td>
+            <td class="mono">{{ o.tentatives }}</td><td class="petit">{% if o.code_erreur %}<span class="mono">{{ o.code_erreur }}</span> {{ o.derniere_erreur or '' }}{% endif %}</td></tr>
+          {% endfor %}
+          </tbody>
+        </table>
+      </div>
+      {% else %}<p class="discret" style="margin:0">Aucune synchronisation pour l'instant.</p>{% endif %}
+      <h3>Activités dans Pipedrive</h3>
+      <div hx-get="{{ url_for('dossiers.activites', dossier_id=dossier.id) }}" hx-trigger="load" hx-swap="outerHTML">
+        <p class="discret" style="margin:0">Chargement des activités… <a href="{{ url_for('dossiers.activites', dossier_id=dossier.id) }}">afficher</a></p>
+      </div>
+      <p class="petit discret" style="margin:0">Pipedrive est un miroir : en cas d'écart, l'état du dossier fait foi et Pipedrive est réaligné.</p>
+    </div>
+    {% endif %}
+  </section>
+
+  <aside class="laterale">
+    <section class="carte"><div class="carte-corps">
+      <h2>Demandeur</h2>
+      <dl class="donnees" style="grid-template-columns:1fr">
+        <div><dt>Nom</dt><dd>{{ dossier.demandeur.prenom }} {{ dossier.demandeur.nom }}</dd></div>
+        <div><dt>Téléphone</dt><dd class="mono">{{ dossier.demandeur.telephone or '—' }}</dd></div>
+        <div><dt>E-mail</dt><dd>{{ dossier.demandeur.email or '—' }}</dd></div>
+      </dl>
+    </div></section>
+    <section class="carte"><div class="carte-corps">
+      <h2>Actions possibles</h2>
+      {% if actions %}
+      <ul style="margin:0;padding-left:18px">{% for a in actions %}<li>{{ a.libelle }}</li>{% endfor %}</ul>
+      {% else %}
+      <p class="discret" style="margin:0">Aucune action pour votre rôle ({{ utilisateur.role|role }}) dans le statut « {{ dossier.statut|statut }} ».</p>
+      {% endif %}
+    </div></section>
+  </aside>
+</div>
+{% endblock %}

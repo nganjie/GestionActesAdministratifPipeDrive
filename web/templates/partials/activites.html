@@ -1,0 +1,19 @@
+{% if not activites.disponible %}
+<div class="message message-attention">Les activités Pipedrive n'ont pas pu être chargées ({{ activites.raison }}). Les données du dossier restent à jour.</div>
+{% elif activites.raison == 'NON_SYNCHRONISE' %}
+<p class="discret" style="margin:0">Le dossier n'est pas encore présent dans Pipedrive (il le sera après sa soumission et la synchronisation).</p>
+{% elif not activites.elements %}
+<p class="discret" style="margin:0">Aucune activité.</p>
+{% else %}
+<div class="defilement">
+  <table>
+    <thead><tr><th>Activité</th><th>Type</th><th>Échéance</th><th>État</th></tr></thead>
+    <tbody>
+    {% for a in activites.elements %}
+      <tr><td>{{ a.intitule }}</td><td>{{ a.type or '—' }}</td><td class="mono petit">{{ a.echeance|date }}</td>
+        <td>{% if a.terminee %}<span class="puce statut-approuve">Terminée</span>{% else %}<span class="puce statut-brouillon">À faire</span>{% endif %}</td></tr>
+    {% endfor %}
+    </tbody>
+  </table>
+</div>
+{% endif %}

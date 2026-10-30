@@ -1,0 +1,73 @@
+{% extends "base.html" %}
+{% from "macros.html" import puce_sync, csrf, pagination with context %}
+{% block titre %}Synchronisation Pipedrive{% endblock %}
+{% block contenu %}
+<div class="entete">
+  <div><h1>Synchronisation Pipedrive</h1>
+    <p class="discret" style="margin:4px 0 0">Pipedrive est un miroir des dossiers. Une panne ne bloque jamais le travail des agents.</p></div>
+  <div class="actions">
+    <form method="post" action="{{ url_for('admin.relancer_tout') }}">{{ csrf() }}
+      <button class="bouton" type="submit">Relancer tous les échecs</button></form>
+  </div>
+</div>
+
+<section class="grille-kpi" aria-label="Santé de l'intégration">
+  {% if sante %}
+  <div class="carte kpi"><span class="discret">Jeton Pipedrive</span>
+    <strong>{% if not sante.configure %}Non configuré{% elif sante.jeton_valide %}Valide{% elif sante.jeton_valide is false %}Refusé{% else %}Inconnu{% endif %}</strong>
+    <span class="petit discret">{% if sante.company_domain %}{{ sante.company_domain }} · compte {{ sante.compte_id }}{% elif sante.erreur %}{{ sante.erreur }}{% else %}OP-01 · /v1/users/me{% endif %}</span></div>
+  <div class="carte kpi"><span class="discret">Pipeline</span>
+    <strong>{{ 'Initialisé' if sante.pipeline_initialise else 'Pas encore créé' }}</strong>
+    <span class="petit discret">créé automatiquement au premier besoin</span></div>
+  <div class="carte kpi"><span class="discret">Types d'activités</span>
+    <strong>{% if not sante.jeton_valide %}Non vérifié{% elif sante.types_activite_manquants %}Manquants : {{ sante.types_activite_manquants|join(', ') }}{% else %}Présents{% endif %}</strong>
+    <span class="petit discret">OP-16 · task, call, deadline</span></div>
+  {% for etat in ('SYNCHRONISE', 'EN_ATTENTE', 'ECHEC') %}
+  <a class="carte kpi" href="{{ url_for('admin.synchronisations', etat=etat) }}">{{ puce_sync(etat) }}
+    <span class="kpi-valeur">{{ sante.synchronisations[etat] }}</span></a>
+  {% endfor %}
+  {% else %}
+  <div class="message message-attention">État de l'intégration indisponible.</div>
+  {% endif %}
+</section>
+
+<section class="carte" aria-labelledby="liste-titre">
+  <div class="carte-entete">
+    <h2 id="liste-titre">Synchronisations{% if etat %} — {{ SYNCHRO[etat][0]|lower }}{% endif %}</h2>
+    <form method="get" class="droite" style="display:flex;gap:8px">
+      <label class="sr-only" for="etat">État</label>
+      <select id="etat" name="etat" style="min-height:34px;width:180px"><option value="">Tous les états</option>
+        {% for code in ('SYNCHRONISE', 'EN_ATTENTE', 'ECHEC') %}<option value="{{ code }}" {% if etat == code %}selected{% endif %}>{{ SYNCHRO[code][0] }}</option>{% endfor %}
+      </select>
+      <button class="bouton bouton-petit" type="submit">Filtrer</button>
+    </form>
+  </div>
+  {% if resultat.elements %}
+  <div class="defilement">
+    <table>
+      <thead><tr><th>Objet</th><th>État</th><th>ID Pipedrive</th><th>Tentatives</th><th>Dernière erreur</th><th>Mis à jour</th><th><span class="sr-only">Action</span></th></tr></thead>
+      <tbody>
+      {% for r in resultat.elements %}
+        <tr>
+          <td>{{ r.cle_idempotence.split(':')[0]|objet_synchro }}
+            {% if r.dossier_id %}<div><a class="petit" href="{{ url_for('dossiers.detail', dossier_id=r.dossier_id, onglet='pipedrive') }}">Voir le dossier</a></div>{% endif %}</td>
+          <td>{{ puce_sync(r.etat) }}{% if r.indetermine %}<div class="petit discret">résultat indéterminé</div>{% endif %}</td>
+          <td class="mono">{{ r.id_pipedrive or '—' }}</td>
+          <td class="mono">{{ r.tentatives }}</td>
+          <td class="petit">{% if r.code_erreur %}<span class="mono">{{ r.code_erreur }}</span><div>{{ r.derniere_erreur or '' }}</div>{% endif %}</td>
+          <td class="mono petit">{{ r.maj_le|dateheure }}</td>
+          <td>{% if r.etat != 'SYNCHRONISE' %}
+            <form method="post" action="{{ url_for('admin.relancer', reference_id=r.id) }}">{{ csrf() }}
+              <button class="bouton bouton-petit {% if r.etat == 'ECHEC' %}bouton-principal{% endif %}" type="submit">{{ 'Relancer' if r.etat == 'ECHEC' else 'Forcer' }}</button></form>
+          {% endif %}</td>
+        </tr>
+      {% endfor %}
+      </tbody>
+    </table>
+  </div>
+  {{ pagination(page, pages, 'admin.synchronisations', {'etat': etat}) }}
+  {% else %}
+  <p class="vide">Aucune synchronisation{% if etat %} dans cet état{% endif %}.</p>
+  {% endif %}
+</section>
+{% endblock %}

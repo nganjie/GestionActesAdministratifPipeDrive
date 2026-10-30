@@ -1,0 +1,62 @@
+{% extends "base.html" %}
+{% from "macros.html" import puce_statut, puce_sync, pagination with context %}
+{% block titre %}Dossiers{% endblock %}
+{% block contenu %}
+<div class="entete">
+  <div>
+    <h1>Dossiers</h1>
+    <p class="discret" style="margin:4px 0 0">{{ resultat.total }} dossier(s) correspondant(s) · périmètre de votre rôle</p>
+  </div>
+  {% if peut_creer %}<div class="actions"><a class="bouton bouton-principal" href="{{ url_for('dossiers.nouveau') }}">Nouveau dossier</a></div>{% endif %}
+</div>
+
+<form class="carte carte-corps barre-filtres" method="get" aria-label="Filtres">
+  <div class="champ large"><label for="reference">Référence</label>
+    <input id="reference" name="reference" value="{{ filtres.reference }}" placeholder="ACT-2026-…"></div>
+  <div class="champ large"><label for="demandeur">Demandeur</label>
+    <input id="demandeur" name="demandeur" value="{{ filtres.demandeur }}" placeholder="Nom ou prénom"></div>
+  <div class="champ"><label for="statut">Statut</label>
+    <select id="statut" name="statut"><option value="">Tous</option>
+      {% for code, (libelle, _) in statuts.items() %}<option value="{{ code }}" {% if filtres.statut == code %}selected{% endif %}>{{ libelle }}</option>{% endfor %}
+    </select></div>
+  <div class="champ"><label for="type">Démarche</label>
+    <select id="type" name="type"><option value="">Toutes</option>
+      {% for d in demarches %}<option value="{{ d.code }}" {% if filtres.type == d.code %}selected{% endif %}>{{ d.libelle }}</option>{% endfor %}
+    </select></div>
+  <div class="champ"><label for="categorie">Catégorie</label>
+    <select id="categorie" name="categorie"><option value="">Toutes</option>
+      {% for code, libelle in CATEGORIES.items() %}<option value="{{ code }}" {% if filtres.categorie == code %}selected{% endif %}>{{ libelle }}</option>{% endfor %}
+    </select></div>
+  <div class="champ"><label for="cree_du">Créé du</label><input id="cree_du" name="cree_du" type="date" value="{{ filtres.cree_du }}"></div>
+  <div class="champ"><label for="cree_au">au</label><input id="cree_au" name="cree_au" type="date" value="{{ filtres.cree_au }}"></div>
+  <div style="display:flex;gap:8px">
+    <button class="bouton bouton-principal" type="submit">Filtrer</button>
+    <a class="bouton" href="{{ url_for('dossiers.liste') }}">Réinitialiser</a>
+  </div>
+</form>
+
+<section class="carte" aria-label="Résultats">
+  {% if resultat.elements %}
+  <div class="defilement">
+    <table>
+      <thead><tr><th>Référence</th><th>Démarche</th><th>Demandeur</th><th>Statut</th><th>Pipedrive</th><th>Mis à jour</th></tr></thead>
+      <tbody>
+      {% for d in resultat.elements %}
+        <tr>
+          <td><a class="mono" href="{{ url_for('dossiers.detail', dossier_id=d.id) }}">{{ d.reference }}</a></td>
+          <td>{{ d.libelle_demarche }}<div class="petit discret">{{ d.categorie|categorie }}</div></td>
+          <td>{{ d.demandeur }}</td>
+          <td>{{ puce_statut(d.statut) }}</td>
+          <td>{{ puce_sync(d.synchronisation) }}</td>
+          <td class="mono petit">{{ d.maj_le|dateheure }}</td>
+        </tr>
+      {% endfor %}
+      </tbody>
+    </table>
+  </div>
+  {{ pagination(page, pages, 'dossiers.liste', filtres) }}
+  {% else %}
+  <p class="vide">Aucun dossier ne correspond à ces critères.</p>
+  {% endif %}
+</section>
+{% endblock %}

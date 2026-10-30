@@ -96,6 +96,18 @@ uv run flask --app web.app run --port 5000
 
 Puis ouvrir http://127.0.0.1:5000 et se connecter avec `ADMIN_IDENTIFIANT` / `ADMIN_MOT_DE_PASSE`.
 
+### Données de démonstration
+
+Comptes prêts à l'emploi (accueil, agents d'état civil et de certification, responsables) et 10 dossiers fictifs
+dans tous les statuts :
+
+```bash
+uv run python -m app.scripts.seed_demo
+```
+
+La liste des comptes, des mots de passe et des dossiers créés est affichée à la fin ; le scénario de test pas à pas
+est dans [docs/SCENARIO_DE_TEST.md](docs/SCENARIO_DE_TEST.md).
+
 ### Initialiser Pipedrive
 
 Vérifie le jeton, les types d'activités (`task`, `call`, `deadline`) et crée le pipeline « Actes administratifs »

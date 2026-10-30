@@ -39,7 +39,53 @@ utilisateur (ou plusieurs navigateurs).
 
 ---
 
-## 2. Étape préalable — créer les comptes (administrateur)
+## 2. Étape préalable — charger les données de démonstration (recommandé)
+
+Une seule commande crée les comptes prêts à l'emploi **et** 10 dossiers fictifs répartis dans tous les statuts :
+
+```bash
+uv run python -m app.scripts.seed_demo
+```
+
+À lancer après `uv run alembic upgrade head`. Le script peut être relancé sans risque : il ne recrée pas les
+comptes existants et n'ajoute des dossiers que si la base n'en contient aucun (`--sans-dossiers` pour créer
+seulement les comptes).
+
+### Comptes créés
+
+| Identifiant | Mot de passe | Nom | Rôle |
+|---|---|---|---|
+| `admin` | `ADMIN_MOT_DE_PASSE` de votre `.env` | Administrateur | Administrateur |
+| `accueil` | `MotDePasse-Accueil1` | Léa Abena | Agent d'accueil |
+| `civil` | `MotDePasse-Civil1` | Awa Ndzana | Agent d'état civil |
+| `certif` | `MotDePasse-Certif1` | Eric Kamga | Agent de certification |
+| `chef` | `MotDePasse-Chef1` | Paul Manga | Officier / responsable |
+| `chef2` | `MotDePasse-Chef2` | Rose Essomba | Officier / responsable |
+
+### Dossiers créés et ce que vous pouvez en faire tout de suite
+
+Les références ci-dessous sont celles d'une base vide (elles peuvent différer si la base contenait déjà des
+dossiers). Chaque dossier a un historique complet, comme si les agents avaient travaillé dans l'application.
+
+| Référence | Démarche | Statut | Action à tester | Avec |
+|---|---|---|---|---|
+| ACT-2026-000001 | Acte de décès (Etienne Mballa) | Délivré | Consulter l'historique complet (9 événements) | n'importe quel agent État civil |
+| ACT-2026-000002 | Acte de décès (Albert Ngono) | En instruction | **Terminer l'instruction** | `civil` |
+| ACT-2026-000003 | Acte de décès (Jeanne Tchoupo) | Brouillon | **Modifier**, déclarer les 3 pièces, **Soumettre** | `accueil` |
+| ACT-2026-000004 | Acte de mariage | Incomplet (2 pièces sur 4) | Déclarer les pièces manquantes (`accueil`) puis **Passer en instruction** (`civil`) | `accueil`, `civil` |
+| ACT-2026-000005 | Copie d'acte de mariage | Soumis | **Vérifier la complétude**, **Passer en instruction** | `civil` |
+| ACT-2026-000006 | Légalisation de signature | Attente décision | **Décider** (approuver ou rejeter avec motif) | `chef` |
+| ACT-2026-000007 | Certification conforme | Approuvé | **Enregistrer la délivrance** | `accueil` |
+| ACT-2026-000008 | Légalisation de signature | Rejeté | Lire le motif du rejet ; aucune action possible | `certif` |
+| ACT-2026-000009 | Certification conforme | Annulé | Lire le motif d'annulation | `certif` |
+| ACT-2026-000010 | Copie d'acte de décès | Délivré | Consulter | `civil` |
+
+Avec ces données, chaque rôle voit immédiatement des dossiers dans **Ma file de travail** du tableau de bord.
+Pour rejouer un parcours de bout en bout, enchaînez avec le scénario A ci-dessous.
+
+### Variante manuelle — créer les comptes soi-même (administrateur)
+
+Si vous n'utilisez pas le script :
 
 1. Se connecter avec `admin` et le mot de passe `ADMIN_MOT_DE_PASSE` de votre fichier `.env`.
 2. Menu **Administration → Comptes et rôles**.

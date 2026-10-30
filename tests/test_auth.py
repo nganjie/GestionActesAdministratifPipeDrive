@@ -79,3 +79,9 @@ async def test_sante_publique(client, db):
     r = await client.get("/api/v1/sante")
     assert r.status_code == 200
     assert r.headers["X-Correlation-Id"]
+
+
+async def test_racine_redirige_vers_la_documentation(client, db):
+    r = await client.get("/")
+    assert r.status_code == 307
+    assert r.headers["location"] == "/docs"

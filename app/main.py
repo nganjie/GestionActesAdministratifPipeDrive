@@ -8,7 +8,7 @@ from collections.abc import AsyncIterator
 from fastapi import FastAPI, Request
 from fastapi.exceptions import RequestValidationError
 from fastapi.middleware.cors import CORSMiddleware
-from fastapi.responses import JSONResponse
+from fastapi.responses import JSONResponse, RedirectResponse
 from sqlalchemy.orm.exc import StaleDataError
 from starlette.exceptions import HTTPException as StarletteHTTPException
 
@@ -119,6 +119,11 @@ def create_app() -> FastAPI:
 
     for routeur in (auth.router, dossiers.router, admin.router):
         app.include_router(routeur, prefix="/api/v1")
+
+    @app.get("/", include_in_schema=False)
+    async def accueil() -> RedirectResponse:
+        return RedirectResponse("/docs")
+
     return app
 
 
